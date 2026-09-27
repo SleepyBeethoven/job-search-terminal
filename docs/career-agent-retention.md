@@ -63,5 +63,6 @@ Also checkpoint WAL and run SQLite VACUUM:
 npm run retention:cleanup -- --vacuum
 ```
 
-The Google Cloud deployment runs normal retention daily at 04:45 Asia/Shanghai and a
-VACUUM pass weekly on Sunday at 04:50. Neither task calls an AI provider.
+For Terry OS, retention is intended to run as a deterministic maintenance task before
+the morning intake window. It does not call an AI provider. Any scheduler used for this
+must stay inside the zero-cost architecture contract and pass the Mandatory QA Gate.
