@@ -39,6 +39,12 @@ function addJob(id: string, status: string, ageDays: number) {
   db.prepare(
     "update jobs set status = ?, raw_description = 'large jd', parsed_description = 'large jd', updated_at = datetime(?, ?) where id = ?"
   ).run(status, NOW.toISOString(), `-${ageDays} days`, id);
+  // Imports record activity too. Keep the fixture's complete activity clock in
+  // sync with the backdated job so retention is testing policy age rather than
+  // being kept alive by today's synthetic import event.
+  db.prepare(
+    "update activity_log set timestamp = datetime(?, ?) where entity_id = ?"
+  ).run(NOW.toISOString(), `-${ageDays} days`, id);
 }
 
 describe("Career Agent retention policy", () => {
