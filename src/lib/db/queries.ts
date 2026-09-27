@@ -200,6 +200,7 @@ type JobRow = {
   cleanup_archive_reason: string;
   retention_pinned: number;
   retention_compacted_at: string;
+  retention_last_activity_at: string;
   retention_reason: string;
   liveness_status: string;
   liveness_checked_at: string;
@@ -3361,6 +3362,7 @@ function mapJob(row: JobRow): JobRecord {
     cleanupArchiveReason: row.cleanup_archive_reason,
     retentionPinned: (row.retention_pinned ?? 0) === 1,
     retentionCompactedAt: row.retention_compacted_at ?? "",
+    retentionLastActivityAt: row.retention_last_activity_at ?? "",
     retentionReason: row.retention_reason ?? "",
     livenessStatus: row.liveness_status ?? "",
     livenessCheckedAt: row.liveness_checked_at ?? "",
