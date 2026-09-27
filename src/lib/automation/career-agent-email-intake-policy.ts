@@ -68,6 +68,20 @@ export function validateCareerAgentEmailIntakeContract(): string[] {
   if (contract.rules.advanceWatermarkOnlyOnSuccess !== true) errors.push("watermark must advance only after a successful scan");
   if (contract.rules.providerFailuresAreIndependent !== true) errors.push("mailbox provider failures must remain independent");
   if (contract.rules.apiRequiresWatermark !== true) errors.push("connected-mail API must require a provider watermark");
+  const gmailExcluded = new Set(contract.rules.gmailExcludedFolders.map((value) => value.toLowerCase()));
+  const outlookExcluded = new Set(contract.rules.outlookExcludedFolders.map((value) => value.toLowerCase()));
+  if (!gmailExcluded.has("spam") || !gmailExcluded.has("trash")) {
+    errors.push("Gmail intake must exclude Spam and Trash");
+  }
+  if (!outlookExcluded.has("junkemail") || !outlookExcluded.has("deleteditems")) {
+    errors.push("Outlook intake must exclude Junk Email and Deleted Items");
+  }
+  if (contract.rules.metadataFirstJobFiltering !== true) errors.push("connected mailbox intake must filter on safe metadata before reading job content");
+  if (contract.rules.broadMailboxRead !== false) errors.push("connected mailbox intake must not broadly read new personal mail");
+  if (contract.rules.openAttachments !== false) errors.push("connected mailbox intake must not open attachments");
+  if (contract.rules.followExternalLinksDuringIntake !== false) errors.push("connected mailbox intake must not follow external links");
+  if (contract.rules.treatExternalContentAsInstructions !== false) errors.push("external email content must never be treated as agent instructions");
+  if (contract.rules.failClosedOnScopeUncertainty !== true) errors.push("mailbox intake must fail closed when safe scope cannot be enforced");
   if (contract.rules.storeFullEmailBody !== false) errors.push("queue must not store full email bodies");
   if (contract.rules.storeFullJobDescriptionInQueue !== false) errors.push("queue must not store full job descriptions");
   if (contract.rules.autoScore || contract.rules.autoTailor || contract.rules.autoApply) {
