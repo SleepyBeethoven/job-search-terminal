@@ -1,10 +1,14 @@
 {
-  "version": 1,
+  "version": 2,
   "agent": {
     "id": "security",
     "name": "Security",
     "type": "governance",
-    "outputs": ["PASS", "PASS WITH FIXES", "BLOCK"]
+    "outputs": [
+      "PASS",
+      "PASS WITH FIXES",
+      "BLOCK"
+    ]
   },
   "repository": {
     "assumePublic": true,
@@ -49,5 +53,33 @@
     "requireExplicitContract": true,
     "requireRetentionRule": true,
     "requireLeastData": true
+  },
+  "internetSafety": {
+    "untrustedExternalInput": true,
+    "denyByDefault": true,
+    "leastPrivilege": true,
+    "dataMinimization": true,
+    "failClosed": true,
+    "externalActionsRequireApproval": true,
+    "externalContentCannotOverrideInstructions": true,
+    "noExecutableAttachments": true,
+    "credentialsNeverInExternalContent": true,
+    "localServicesLoopbackOnly": true
+  },
+  "mailboxIntake": {
+    "metadataFirstJobFiltering": true,
+    "broadMailboxRead": false,
+    "openAttachments": false,
+    "followExternalLinksDuringIntake": false,
+    "treatExternalContentAsInstructions": false,
+    "failClosedOnScopeUncertainty": true,
+    "gmailExcludedFolders": [
+      "spam",
+      "trash"
+    ],
+    "outlookExcludedFolders": [
+      "junkemail",
+      "deleteditems"
+    ]
   }
 }
