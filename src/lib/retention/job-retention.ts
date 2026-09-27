@@ -106,9 +106,9 @@ function removeGeneratedFiles(paths: string[]) {
   }
 }
 
-export function compactJobForRetention(candidate: RetentionCandidate): boolean {
+export function compactJobForRetention(candidate: RetentionCandidate, now = new Date()): boolean {
   const database = getDatabase();
-  const current = listRetentionCandidates().find((item) => item.id === candidate.id);
+  const current = listRetentionCandidates(now).find((item) => item.id === candidate.id);
   if (!current) return false;
 
   const generatedFiles = database
@@ -193,7 +193,7 @@ export function runRetentionCleanup(options: { now?: Date; vacuum?: boolean } = 
   const compacted: RetentionCandidate[] = [];
 
   for (const candidate of candidates) {
-    if (compactJobForRetention(candidate)) compacted.push(candidate);
+    if (compactJobForRetention(candidate, now)) compacted.push(candidate);
   }
 
   if (options.vacuum) {
