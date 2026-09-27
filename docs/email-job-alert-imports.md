@@ -72,9 +72,10 @@ workflows. This path is **incremental-only** and is governed by
 - Historical backfill is disabled unless Terry explicitly asks for it.
 - The cloud queue stores structured job fields and a short snippet only, never the
   full email body or full job description.
-- The connector intake API applies the hard cutoff again before parsing a Gmail or
-  Outlook message. This is defense in depth; the scheduled scanner should already
-  have filtered the message before sending it.
+- The connector intake API requires the caller to supply that provider's current
+  `last_success_at` watermark and applies the boundary again before parsing a Gmail
+  or Outlook message. A missing or invalid watermark fails closed. This is defense in
+  depth; the scheduled scanner should already have filtered the message before sending it.
 
 The queue is only a staging area. Scoring, resume tailoring, application
 preparation, and submission are outside this intake step.
