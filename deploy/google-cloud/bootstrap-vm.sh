@@ -59,17 +59,33 @@ if [[ ! -d "${APP_DIR}/.git" ]]; then
   BEFORE=""
 else
   BEFORE="$(git -C "${APP_DIR}" rev-parse HEAD)"
+  # Runtime directories are symlinked onto the persistent data disk. Remove the
+  # links before git reset restores the tracked .gitkeep directories.
+  for runtime_dir in data output assets; do
+    [[ -L "${APP_DIR}/${runtime_dir}" ]] && rm "${APP_DIR}/${runtime_dir}"
+  done
 fi
 
 git -C "${APP_DIR}" fetch origin main
 git -C "${APP_DIR}" reset --hard origin/main
 AFTER="$(git -C "${APP_DIR}" rev-parse HEAD)"
 
+# Keep every mutable/runtime file on the separate persistent data disk.
+for runtime_dir in data output assets; do
+  rm -rf "${APP_DIR}/${runtime_dir}"
+  mkdir -p "${DATA_DIR}/${runtime_dir}"
+  ln -s "${DATA_DIR}/${runtime_dir}" "${APP_DIR}/${runtime_dir}"
+done
+
 if [[ "${BEFORE}" != "${AFTER}" || ! -f "${APP_DIR}/.next/BUILD_ID" ]]; then
   cd "${APP_DIR}"
   npm ci
   NEXT_TELEMETRY_DISABLED=1 npm run build
 fi
+
+# Next.js writes runtime caches and JST writes generated artifacts through the
+# symlinked runtime directories, so the service account needs ownership.
+chown -R jst:jst "${APP_DIR}" "${DATA_DIR}"
 
 cat >/etc/job-search-terminal.env <<EOF
 NODE_ENV=production
