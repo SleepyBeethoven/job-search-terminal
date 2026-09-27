@@ -4,6 +4,7 @@ import {
   type NormalizedEmailJobAlertMessage,
 } from "@/lib/scanner/email-job-alert-importer";
 import { checkEmailIntakeBoundary } from "@/lib/automation/career-agent-email-intake-policy";
+import { refreshTerryOsCareerSummary } from "@/lib/integrations/terry-os-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
       text,
       html,
     });
+    void refreshTerryOsCareerSummary();
 
     return NextResponse.json({
       success: true,

@@ -15,6 +15,20 @@ the numbers mean and when they change.
 
 ---
 
+## 0.24.0 — 2026-09-27 — Terry OS live Career summary
+
+**Added**
+
+- Career Agent now writes an aggregate-only local snapshot that Terry OS can read to show whether Career is idle or waiting for review and how many Pending Review decisions need attention.
+- The summary refreshes after connected-mail intake, queue sync and review actions, plus a five-minute heartbeat while Career Agent is running.
+
+**Safety**
+
+- The handoff is a private local file, not an API or cloud export. It contains exactly six fixed fields and never includes job records, company names, links, email content, resumes, credentials or arbitrary error text.
+- Database/count failures produce a fixed BLOCKED summary instead of leaking exception details. The integration can be disabled with `JST_TERRY_OS_SUMMARY_FILE=off`.
+
+---
+
 ## 0.23.0 — 2026-09-27 — Internet safety baseline
 
 **Added**

@@ -145,6 +145,22 @@ the shared help components under `src/components/help/`.
 
 ---
 
+## Terry OS Control Center summary
+
+When Career Agent is running, it writes a tiny local status snapshot for Terry OS so the
+Control Center can show whether Career is idle or waiting for review.
+
+The snapshot contains only six aggregate fields: schema version, status, health, the
+number of Pending Review email candidates, a fixed task code, and an update timestamp.
+No job title, company, URL, email body, job description, resume, application answer,
+credential, or arbitrary error message crosses this boundary. The default handoff is a
+private local file in the current user's `.terry-os/runtime/` directory; it does not
+create a network service or cloud dependency.
+
+It refreshes after email queue sync/import/review changes and at least every five minutes
+while the app is running. Set `JST_TERRY_OS_SUMMARY_FILE=off` to disable the handoff, or
+set it to an explicit local file path to override the default.
+
 ## Dashboard `/dashboard`
 
 The command center. Has two states depending on setup progress.

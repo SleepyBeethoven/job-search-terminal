@@ -1,3 +1,4 @@
+import { refreshTerryOsCareerSummary } from "@/lib/integrations/terry-os-summary";
 import { createHash } from "node:crypto";
 import {
   getPendingEmailCandidatesByIds,
@@ -214,6 +215,7 @@ export async function syncCareerAgentQueue(
       `Career Agent queue sync received ${rows.length} rows and queued ${queued} new candidates`,
       result,
     );
+    void refreshTerryOsCareerSummary();
   }
 
   return result;

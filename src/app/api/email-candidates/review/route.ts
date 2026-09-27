@@ -5,6 +5,7 @@ import {
   getPendingEmailCandidatesByIds,
 } from "@/lib/db/queries";
 import { importApprovedEmailCandidates } from "@/lib/scanner/email-job-alert-importer";
+import { refreshTerryOsCareerSummary } from "@/lib/integrations/terry-os-summary";
 
 type ReviewBody = {
   action: "approve" | "dismiss" | "dismiss-all";
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
 
     if (body.action === "dismiss-all") {
       deleteAllPendingEmailCandidates();
+      void refreshTerryOsCareerSummary();
       return NextResponse.json({ success: true, action: "dismiss-all" });
     }
 
@@ -27,6 +29,7 @@ export async function POST(req: Request) {
 
     if (body.action === "dismiss") {
       deletePendingEmailCandidates(ids);
+      void refreshTerryOsCareerSummary();
       return NextResponse.json({ success: true, action: "dismiss", dismissed: ids.length });
     }
 
@@ -37,6 +40,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ action: "approve", ...result }, { status: 500 });
       }
       deletePendingEmailCandidates(ids);
+      void refreshTerryOsCareerSummary();
       return NextResponse.json({ action: "approve", ...result });
     }
 

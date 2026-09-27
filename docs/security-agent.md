@@ -103,6 +103,23 @@ attacker-controlled content and unrelated personal information:
 - Instructions embedded in an email are treated as inert text.
 - If folder/source filtering cannot be enforced, the scan fails closed.
 
+## Terry OS local summary boundary
+
+Career Agent may expose one aggregate-only local snapshot to Terry OS. This is a local
+file handoff, not a network API and not a cloud export.
+
+The snapshot contains exactly six fields: schema version, coarse status, coarse health,
+the count of unreviewed Pending Review candidates, a fixed task code, and the UTC update
+time. It must not contain job titles, companies, URLs, email content, resume data,
+application material, connector identifiers, credentials, arbitrary error text, or other
+free-form user data.
+
+The default file lives under the current user's private `.terry-os/runtime/` directory.
+Writes use a same-directory temporary file followed by rename, with private file modes
+where the operating system supports them. A database/counting failure produces a fixed
+BLOCKED summary without embedding exception text. A file-write failure is logged only as
+a generic refresh failure.
+
 ## Current Career Agent boundary
 
 The Google Sheet intake queue may hold only lightweight lead fields and timestamps.
