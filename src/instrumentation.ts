@@ -5,8 +5,10 @@ export async function register() {
     const { startBrowserBoardFileWatcher } = await import("./lib/scanner/linkedin-file-watcher");
     const { startJobDiscoveryScheduler } = await import("./lib/scanner/scheduler");
     const { startCareerAgentQueueSync } = await import("./lib/scanner/career-agent-queue-sync");
+    const { startTerryOsCareerSummaryExporter } = await import("./lib/integrations/terry-os-summary");
     startBrowserBoardFileWatcher();
     startJobDiscoveryScheduler();
     startCareerAgentQueueSync();
+    startTerryOsCareerSummaryExporter();
   }
 }
