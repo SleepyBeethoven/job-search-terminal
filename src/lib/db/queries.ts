@@ -198,6 +198,10 @@ type JobRow = {
   liveness_reason: string;
   liveness_evidence_url: string;
   cleanup_archive_reason: string;
+  retention_pinned: number;
+  retention_compacted_at: string;
+  retention_last_activity_at: string;
+  retention_reason: string;
   liveness_status: string;
   liveness_checked_at: string;
   scope_status: string;
@@ -538,8 +542,18 @@ export function updateJobStatus(id: string, status: string) {
       .run({ id, status });
     logActivity("job", id, "Job skipped and archived", {});
   } else {
-    getDatabase().prepare("update jobs set status = @status where id = @id").run({ id, status });
+    getDatabase()
+      .prepare("update jobs set status = @status, updated_at = current_timestamp where id = @id")
+      .run({ id, status });
+    logActivity("job", id, `Job status updated to ${status}`, { status });
   }
+}
+
+export function setJobRetentionPinned(id: string, pinned: boolean) {
+  getDatabase()
+    .prepare("update jobs set retention_pinned = @pinned, updated_at = current_timestamp where id = @id")
+    .run({ id, pinned: pinned ? 1 : 0 });
+  logActivity("job", id, pinned ? "Job pinned for retention" : "Job unpinned for retention", {});
 }
 
 export function saveJobDescription(id: string, rawDescription: string) {
@@ -3346,6 +3360,10 @@ function mapJob(row: JobRow): JobRecord {
     livenessReason: row.liveness_reason,
     livenessEvidenceUrl: row.liveness_evidence_url,
     cleanupArchiveReason: row.cleanup_archive_reason,
+    retentionPinned: (row.retention_pinned ?? 0) === 1,
+    retentionCompactedAt: row.retention_compacted_at ?? "",
+    retentionLastActivityAt: row.retention_last_activity_at ?? "",
+    retentionReason: row.retention_reason ?? "",
     livenessStatus: row.liveness_status ?? "",
     livenessCheckedAt: row.liveness_checked_at ?? "",
     scopeStatus: row.scope_status ?? "",

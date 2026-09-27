@@ -1535,5 +1535,21 @@ export const migrations = [
       alter table jobs add column liveness_evidence_url text not null default '';
       alter table jobs add column cleanup_archive_reason text not null default '';
     `
+  },
+  {
+    id: "0070_career_agent_retention",
+    sql: `
+      -- Career Agent retention keeps a tiny tombstone in jobs for dedupe/outcome
+      -- history while allowing heavy job-specific data to be removed.
+      alter table jobs add column retention_pinned integer not null default 0;
+      alter table jobs add column retention_compacted_at text not null default '';
+      alter table jobs add column retention_last_activity_at text not null default '';
+      alter table jobs add column retention_reason text not null default '';
+
+      create index if not exists idx_jobs_retention_compacted
+        on jobs(retention_compacted_at);
+      create index if not exists idx_jobs_retention_pinned
+        on jobs(retention_pinned);
+    `
   }
 ];

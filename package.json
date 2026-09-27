@@ -1,6 +1,6 @@
 {
   "name": "job-search-terminal",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "A free, source-available, local-first job-search dashboard that helps job seekers scan roles, score fit with AI, generate tailored resumes, track applications, and prepare for interviews without accounts, subscriptions, or cloud storage.",
   "license": "CC-BY-NC-4.0",
   "author": "UX Design Lab",
@@ -49,7 +49,8 @@
     "account:restore": "tsx scripts/account-restore.ts",
     "account:check": "tsx scripts/account-backup-check.ts",
     "data:export": "tsx scripts/data-export.ts",
-    "discover:sources": "tsx scripts/discover-sources.ts"
+    "discover:sources": "tsx scripts/discover-sources.ts",
+    "retention:cleanup": "tsx scripts/retention-cleanup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

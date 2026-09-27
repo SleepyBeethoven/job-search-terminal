@@ -15,6 +15,23 @@ the numbers mean and when they change.
 
 ---
 
+## 0.19.0 — 2026-09-27 — Cloud retention and low-storage operation
+
+**Added**
+
+- Career Agent retention compacts stale opportunities into lightweight tombstones instead of keeping full job descriptions, AI analysis, application drafts and generated files indefinitely.
+- Rejected and Skipped roles compact on the next retention run; early-stage roles compact after 7 inactive days; active application stages compact after 30 inactive days. Pinned roles are exempt.
+- Compaction preserves company, title, posting URL/key, last status, fit score, resume lane, last-activity snapshot and retention reason so duplicate prevention and outcome history still work.
+- Added `npm run retention:cleanup`; `--vacuum` also checkpoints SQLite WAL and runs VACUUM to reclaim disk space.
+- Added a private Google Compute Engine deployment path using an `e2-micro` VM, a separate persistent data disk, systemd, SSH-tunnel-only access, daily 04:45 retention cleanup and weekly VACUUM.
+
+**Changed**
+
+- Job stage changes now refresh the job update timestamp and record an activity event so inactivity retention reflects real stage movement.
+- Google Cloud runtime `data/`, `output/` and `assets/` are placed on the persistent data disk rather than the VM's application checkout.
+
+---
+
 ## 0.18.0 — 2026-09-27 — Terry OS Career Agent workflow
 
 **Added**
