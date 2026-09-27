@@ -701,13 +701,15 @@ export const helpPages: HelpPage[] = [
         id: "email-alerts",
         title: "Import job alert emails",
         intro:
-          "Job boards send alert emails full of postings. Rather than copying each one out by hand, save the email as a file and drop it into a folder the app watches.",
+          "You can still import saved email files by hand. Terry OS can also receive new Gmail and Outlook job alerts through a separately connected automation.",
         bullets: [
-          "Save the email from your mail program, then put the file into the `data/email-job-alert-imports/` folder inside the app\'s folder while the app is running. It accepts `.eml`, `.html`, and `.txt` files.",
-          "The app reads the file and lists what it found, but adds nothing yet. You approve each one, or dismiss it.",
-          "Anything you do not act on stays waiting. Nothing is added behind your back.",
+          "For manual import, save the email from your mail program and put it into the `data/email-job-alert-imports/` folder while the app is running. It accepts `.eml`, `.html`, and `.txt` files.",
+          "For connected Gmail and Outlook intake, the automation reads only new mail after its saved timestamp. It does not use unread status, so old unread job alerts are not treated as new.",
+          "The first connected-mail cutoff is 27 September 2026 at 11:07 Asia/Shanghai. Mail at or before that time is outside the intake window unless you explicitly ask for a historical backfill.",
+          "Gmail and Outlook keep separate last-success timestamps. If one mailbox scan fails, that mailbox keeps its old timestamp so the missed interval can be retried; the other mailbox can still move forward.",
+          "Connected intake stores lightweight job fields and a short snippet in the private queue, not the full email body or full job description.",
+          "The app lists what it found but adds nothing to your job list until you approve it. Intake also stops before scoring, resume tailoring, or applying.",
           "Alert emails often link back to the job board rather than the employer. Open the job and press Resolve posting to go looking for the real posting.",
-          "The app never connects to your mailbox. It only reads files you put in that folder yourself.",
         ],
       },
       {
@@ -1346,6 +1348,16 @@ export const helpPages: HelpPage[] = [
           "Try a simpler ATS-friendly resume if extraction is poor.",
           "Make sure Chrome or a compatible Chromium browser is installed for PDF generation.",
           "If an employer requires DOCX instead of PDF, export or convert outside the app according to the employer instructions.",
+        ],
+      },
+      {
+        id: "email-intake-state",
+        title: "Connected email intake says BLOCKED or stops before scanning",
+        bullets: [
+          "This is a safety stop. The automation checks its Gmail and Outlook timestamps before it reads either mailbox.",
+          "If the State tab is missing, a timestamp is malformed, or a last-success timestamp is earlier than the hard cutoff, the affected mailbox is not scanned.",
+          "Do not fix this by changing the job alerts to unread-only or by removing the cutoff. The saved timestamp is what prevents a first run from reading your old mailbox history.",
+          "A failed mailbox scan does not move its last-success timestamp. The next successful run should retry from the same point.",
         ],
       },
       {
