@@ -13,6 +13,11 @@ This document defines the **authoritative boundary** between the User Layer and
 the System Layer for all agents working in this repository (Claude, Codex, or
 any other automated tool).
 
+Because this fork is public, private cloud identifiers are also User Layer data even when
+they are not authentication secrets. A Google Sheet ID, private connector ID, personal
+mailbox address, or similar identifier must live in private runtime state rather than
+tracked source/configuration.
+
 ---
 
 ## User Layer — Never Auto-Modify or Delete
