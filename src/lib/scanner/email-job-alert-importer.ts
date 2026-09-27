@@ -427,7 +427,14 @@ function extractCandidates(input: {
 
     // Gmail/Glassdoor-style digests often render company first and job title second.
     // Keep this deliberately narrow so normal title -> company layouts are not double-counted.
-    if (!looksLikeTitle(line) && looksLikeCompany(line) && looksLikeTitle(next) && LOCATION_RE.test(third)) {
+    if (
+      !/\.(?:txt|html?|eml)$/i.test(line) &&
+      !looksLikeTitle(line) &&
+      looksLikeCompany(line) &&
+      looksLikeTitle(next) &&
+      LOCATION_RE.test(third) &&
+      !looksLikeTitle(third)
+    ) {
       pushCandidate({
         title: next,
         company: line,
