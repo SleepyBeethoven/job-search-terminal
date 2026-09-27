@@ -28,6 +28,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Security Agent Gate
+        run: npm run security:check
+
       - name: Career Agent QA Gate
         run: npm run career-agent:qa
 
