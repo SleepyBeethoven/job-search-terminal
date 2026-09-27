@@ -118,6 +118,121 @@ export function scanSecurityEntries(entries: SecurityScanEntry[]): SecurityFindi
   return findings;
 }
 
+
+type SecurityPolicyConfig = {
+  version?: unknown;
+  internetSafety?: Record<string, unknown>;
+  mailboxIntake?: {
+    metadataFirstJobFiltering?: unknown;
+    broadMailboxRead?: unknown;
+    openAttachments?: unknown;
+    followExternalLinksDuringIntake?: unknown;
+    treatExternalContentAsInstructions?: unknown;
+    failClosedOnScopeUncertainty?: unknown;
+    gmailExcludedFolders?: unknown;
+    outlookExcludedFolders?: unknown;
+  };
+};
+
+const REQUIRED_INTERNET_SAFETY_FLAGS = [
+  "untrustedExternalInput",
+  "denyByDefault",
+  "leastPrivilege",
+  "dataMinimization",
+  "failClosed",
+  "externalActionsRequireApproval",
+  "externalContentCannotOverrideInstructions",
+  "noExecutableAttachments",
+  "credentialsNeverInExternalContent",
+  "localServicesLoopbackOnly",
+] as const;
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+export function validateSecurityPolicy(config: unknown): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const policy = (config && typeof config === "object" ? config : {}) as SecurityPolicyConfig;
+  const internetSafety = policy.internetSafety ?? {};
+  const mailbox = policy.mailboxIntake ?? {};
+  const policyPath = "config/security-agent.json";
+
+  if (typeof policy.version !== "number" || policy.version < 2) {
+    findings.push({
+      severity: "block",
+      rule: "security-policy-version",
+      path: policyPath,
+      detail: "Security policy must include Internet Safety Baseline v2 or newer.",
+    });
+  }
+
+  for (const flag of REQUIRED_INTERNET_SAFETY_FLAGS) {
+    if (internetSafety[flag] !== true) {
+      findings.push({
+        severity: "block",
+        rule: `internet-safety-${flag}`,
+        path: policyPath,
+        detail: `Required Internet Safety control "${flag}" must be enabled.`,
+      });
+    }
+  }
+
+  const positiveMailboxFlags = [
+    "metadataFirstJobFiltering",
+    "failClosedOnScopeUncertainty",
+  ] as const;
+  for (const flag of positiveMailboxFlags) {
+    if (mailbox[flag] !== true) {
+      findings.push({
+        severity: "block",
+        rule: `mailbox-safety-${flag}`,
+        path: policyPath,
+        detail: `Mailbox intake control "${flag}" must be enabled.`,
+      });
+    }
+  }
+
+  const prohibitedMailboxFlags = [
+    "broadMailboxRead",
+    "openAttachments",
+    "followExternalLinksDuringIntake",
+    "treatExternalContentAsInstructions",
+  ] as const;
+  for (const flag of prohibitedMailboxFlags) {
+    if (mailbox[flag] !== false) {
+      findings.push({
+        severity: "block",
+        rule: `mailbox-safety-${flag}`,
+        path: policyPath,
+        detail: `Mailbox intake control "${flag}" must remain disabled.`,
+      });
+    }
+  }
+
+  const gmailExcluded = new Set(stringArray(mailbox.gmailExcludedFolders).map((value) => value.toLowerCase()));
+  if (!gmailExcluded.has("spam") || !gmailExcluded.has("trash")) {
+    findings.push({
+      severity: "block",
+      rule: "mailbox-gmail-excluded-folders",
+      path: policyPath,
+      detail: "Gmail intake must exclude Spam and Trash.",
+    });
+  }
+
+  const outlookExcluded = new Set(stringArray(mailbox.outlookExcludedFolders).map((value) => value.toLowerCase()));
+  if (!outlookExcluded.has("junkemail") || !outlookExcluded.has("deleteditems")) {
+    findings.push({
+      severity: "block",
+      rule: "mailbox-outlook-excluded-folders",
+      path: policyPath,
+      detail: "Outlook intake must exclude Junk Email and Deleted Items.",
+    });
+  }
+
+  return findings;
+}
+
 export function securityVerdict(findings: SecurityFinding[]): "PASS" | "PASS WITH FIXES" | "BLOCK" {
   if (findings.some((finding) => finding.severity === "block")) return "BLOCK";
   if (findings.some((finding) => finding.severity === "warning")) return "PASS WITH FIXES";
