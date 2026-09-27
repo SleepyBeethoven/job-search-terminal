@@ -15,6 +15,24 @@ the numbers mean and when they change.
 
 ---
 
+## 0.18.0 — 2026-09-27 — Terry OS Career Agent workflow
+
+**Added**
+
+- Five stable resume lanes for AI Quality, AI Operations, CRM/Lifecycle, Project/Business Operations, and China Market/Bilingual roles, with automatic lane routing and manual override.
+- Resume decisions now expose **Use Template**, **Light Tailor**, **Full Tailor**, and **Skip**. Light Tailor only updates Summary and Skills; Full Tailor can update the approved experience sections.
+- Resume tailoring now runs a token-volume preflight. Runs above the configured ceiling stop for explicit approval instead of silently consuming more AI budget.
+- Gmail and Outlook job-alert messages can enter the same approval-gated email intake path, including Outlook SafeLinks, tracked job URLs, and cross-mailbox duplicate detection.
+- Approved email jobs are automatically evaluated one by one, routed to an R1–R5 resume lane, and sent to a new **Waiting for Terry** dashboard queue for the final human decision.
+- Dashboard metrics now surface high matches, waiting decisions, tailored jobs, applications, and active interviews.
+
+**Changed**
+
+- Email-job parsing recognises Terry OS target families such as AI evaluation, reviewer/training operations, CRM/lifecycle, project operations, and Mandarin/China-market work.
+- Gmail digest parsing supports company-first job layouts without weakening the existing title-first parser.
+
+---
+
 ## 0.17.5 — 2026-09-24 — Use the full evaluation in resume writing
 
 **Fixed**

@@ -15,6 +15,7 @@ import {
   getJobSourceBreakdown,
   getLatestScanRun,
   getFreshMatches,
+  getWaitingForTerryJobs,
   getRecentScanYieldRuns,
   getScanSchedule,
   getResumes,
@@ -94,7 +95,8 @@ export default function DashboardPage() {
   const schedule = getScanSchedule();
   const freshMatches = getFreshMatches(schedule.freshnessWindowHours);
   const freshMatchesPreview = freshMatches.slice(0, 5);
-  const primaryMetricLabels = new Set(["Priority matches", "Applications sent", "Follow-ups due", "Interviews active"]);
+  const waitingForTerry = getWaitingForTerryJobs(6);
+  const primaryMetricLabels = new Set(["High matches", "Waiting for decision", "Applications sent", "Interviews active"]);
   const primaryMetrics = metrics.filter((metric) => primaryMetricLabels.has(metric.label));
   const secondaryMetrics = metrics.filter((metric) => !primaryMetricLabels.has(metric.label));
 
@@ -257,6 +259,44 @@ export default function DashboardPage() {
                     Open the Evidence bank →
                   </Link>
                 </div>
+              </Card>
+            )}
+
+            {waitingForTerry.length > 0 && (
+              <Card>
+                <CardHeader className="mb-0">
+                  <CardTitle>Waiting for Terry</CardTitle>
+                  <CardDescription>
+                    Evaluated roles waiting for your decision. Open one to use its recommended R1–R5 lane, tailor it, or skip it.
+                  </CardDescription>
+                </CardHeader>
+                <ol className="grid gap-2">
+                  {waitingForTerry.map((job) => (
+                    <li
+                      className="flex min-w-0 flex-wrap items-center gap-3 rounded-control border border-border bg-surface px-3 py-3"
+                      key={job.id}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <Link className="block break-words font-medium text-accent hover:underline" href={`/jobs/${job.id}?tab=resume`}>
+                          {job.title}
+                        </Link>
+                        <p className="break-words text-xs text-muted">{job.company} · {job.location}</p>
+                        <p className="mt-1 text-xs text-muted">
+                          Recommended lane: <span className="font-medium text-ink">{job.recommendedResume || "To be selected"}</span>
+                        </p>
+                      </div>
+                      <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        <Badge tone={job.fitScore >= 90 ? "success" : job.fitScore >= 75 ? "warning" : "neutral"}>
+                          {job.fitScore}% fit
+                        </Badge>
+                        <Badge>{job.recommendation || "Review manually"}</Badge>
+                        <Link className="whitespace-nowrap text-xs font-medium text-accent hover:underline" href={`/jobs/${job.id}?tab=resume`}>
+                          Decide →
+                        </Link>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
               </Card>
             )}
 

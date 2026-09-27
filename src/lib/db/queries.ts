@@ -1364,6 +1364,13 @@ export function getActivity(): ActivityRecord[] {
   }));
 }
 
+export function getWaitingForTerryJobs(limit = 8): JobRecord[] {
+  return getJobs()
+    .filter((job) => !job.archived && job.status === "Reviewed" && job.fitScore > 0)
+    .sort((a, b) => b.fitScore - a.fitScore || b.firstSeenDate.localeCompare(a.firstSeenDate))
+    .slice(0, limit);
+}
+
 export function getDashboardMetrics(): DashboardMetric[] {
   const jobs = getJobs();
   const applications = getApplications();
@@ -1371,6 +1378,8 @@ export function getDashboardMetrics(): DashboardMetric[] {
   const today = new Date().toISOString().slice(0, 10);
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const waitingForDecision = jobs.filter((job) => !job.archived && job.status === "Reviewed" && job.fitScore > 0);
+  const tailoredJobIds = new Set(documents.map((document) => document.jobId));
 
   return [
     {
@@ -1380,15 +1389,21 @@ export function getDashboardMetrics(): DashboardMetric[] {
       tone: "success"
     },
     {
-      label: "Priority matches",
-      value: String(jobs.filter((job) => job.recommendation === "Priority apply").length),
-      detail: "Needs review",
-      tone: "warning"
+      label: "High matches",
+      value: String(jobs.filter((job) => !job.archived && job.fitScore >= 75 && job.status !== "Skipped").length),
+      detail: "75%+ fit",
+      tone: "success"
     },
     {
-      label: "PDFs generated",
-      value: String(documents.length),
-      detail: "Ready",
+      label: "Waiting for decision",
+      value: String(waitingForDecision.length),
+      detail: "Needs Terry",
+      tone: waitingForDecision.length > 0 ? "warning" : "neutral"
+    },
+    {
+      label: "Tailored",
+      value: String(tailoredJobIds.size),
+      detail: "Resume generated",
       tone: "neutral"
     },
     {
@@ -1414,7 +1429,7 @@ export function getDashboardMetrics(): DashboardMetric[] {
     {
       label: "Skipped",
       value: String(jobs.filter((job) => job.status === "Skipped").length),
-      detail: "Weak fit",
+      detail: "Passed on",
       tone: "danger"
     }
   ];
