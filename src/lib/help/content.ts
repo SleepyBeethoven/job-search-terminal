@@ -708,6 +708,8 @@ export const helpPages: HelpPage[] = [
           "The first connected-mail cutoff is 27 September 2026 at 11:07 Asia/Shanghai. Mail at or before that time is outside the intake window unless you explicitly ask for a historical backfill.",
           "Gmail and Outlook keep separate last-success timestamps. If one mailbox scan fails, that mailbox keeps its old timestamp so the missed interval can be retried; the other mailbox can still move forward.",
           "Connected intake stores lightweight job fields and a short snippet in the private queue, not the full email body or full job description.",
+          "After the free Google Apps Script bridge is configured, JST checks that queue when it starts and every five minutes while it is running. A queue row is marked Synced to JST only after it is safely written into the local Pending Review list.",
+          "Cloud queue rows older than seven days are cleaned up automatically by the Apps Script trigger.",
           "The app lists what it found but adds nothing to your job list until you approve it. Intake also stops before scoring, resume tailoring, or applying.",
           "Alert emails often link back to the job board rather than the employer. Open the job and press Resolve posting to go looking for the real posting.",
         ],
@@ -1271,6 +1273,17 @@ export const helpPages: HelpPage[] = [
           "If you imported jobs from a private page before this update, run Verify active postings again. The app now treats the import's automatic link lookup as part of the scan, so untouched Found jobs can appear in the cleanup preview.",
           "If archiving fails, retry. An archive batch is saved together, so a database failure does not leave half the batch archived. Open Why jobs were kept to inspect skipped results.",
           "Older actions that left no saved record may not be recognized as activity. Review the candidates before confirming; you can restore mistakes from Archived.",
+        ],
+      },
+      {
+        id: "career-agent-queue",
+        title: "New mailbox jobs are not appearing in Pending Review",
+        bullets: [
+          "The scheduled mailbox scan and the local JST sync are separate steps. First check the Google Sheet Intake tab: a new row should say Pending Review.",
+          "If the Sheet has the row but JST does not, the free Apps Script bridge is either not configured or not reachable. JST needs both JST_CAREER_AGENT_QUEUE_URL and JST_CAREER_AGENT_QUEUE_TOKEN before it starts.",
+          "Restart JST after adding or changing those values. With the bridge configured, it syncs once at startup and then every five minutes.",
+          "If a Sheet row says Synced to JST, the bridge already acknowledged the local write. The candidate should be in the email approval modal unless you already approved or dismissed it.",
+          "A failed local write is never acknowledged in the Sheet, so the row stays Pending Review and can be retried.",
         ],
       },
       {
