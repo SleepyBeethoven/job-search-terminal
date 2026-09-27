@@ -7,7 +7,9 @@ code change itself looks small.
 ## Gate
 
 Any email intake, scheduled scan, synchronization, retention change, cloud storage
-change, or external action must pass Central QA before it is enabled.
+change, or external action must pass Central QA before it is enabled. The repository
+also runs `npm run career-agent:qa` as a required CI step so this contract cannot be
+silently skipped during a pull request.
 
 The reviewer does not redesign the feature. It checks the implementation against the
 declared contract and returns **PASS**, **PASS WITH FIXES**, or **BLOCK**.
@@ -41,11 +43,13 @@ Before a scheduled mailbox read:
 1. Read the two provider rows from `State`.
 2. Confirm `hard_cutoff_at` and `last_success_at` are valid timestamps.
 3. Confirm `last_success_at >= hard_cutoff_at`.
-4. If any state is missing or malformed, return **BLOCK** and do not read that
+4. Confirm any connected-mail API handoff includes the provider's current
+   `last_success_at`; the API fails closed when it is missing.
+5. If any state is missing or malformed, return **BLOCK** and do not read that
    mailbox.
-5. Search only the interval strictly after `last_success_at`.
-6. On success, advance only that provider's watermark to the scan completion time.
-7. On failure, leave its watermark unchanged.
+6. Search only the interval strictly after `last_success_at`.
+7. On success, advance only that provider's watermark to the scan completion time.
+8. On failure, leave its watermark unchanged.
 
 ## Zero-cost constraint
 
