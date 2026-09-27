@@ -1,10 +1,16 @@
-const CAREER_AGENT_SPREADSHEET_ID = "1MBjx5Oq6lTUnELZydgnyiedHklpH2uM_Xcf_2nrcgvg";
 const CAREER_AGENT_INTAKE_SHEET = "Intake";
 const CAREER_AGENT_SECRET_PROPERTY = "CAREER_AGENT_BRIDGE_SECRET";
+const CAREER_AGENT_SHEET_ID_PROPERTY = "CAREER_AGENT_SHEET_ID";
 const CAREER_AGENT_MAX_ROWS = 100;
 
 function initializeCareerAgentBridge() {
   const props = PropertiesService.getScriptProperties();
+  const boundSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  if (!boundSpreadsheet) {
+    throw new Error("Open this script from the Career Agent Google Sheet before initialization.");
+  }
+  props.setProperty(CAREER_AGENT_SHEET_ID_PROPERTY, boundSpreadsheet.getId());
+
   let secret = props.getProperty(CAREER_AGENT_SECRET_PROPERTY);
   if (!secret) {
     secret = [Utilities.getUuid(), Utilities.getUuid(), Utilities.getUuid()].join("");
@@ -57,7 +63,7 @@ function doPost(e) {
 }
 
 function careerAgentPending_() {
-  const sheet = SpreadsheetApp.openById(CAREER_AGENT_SPREADSHEET_ID).getSheetByName(CAREER_AGENT_INTAKE_SHEET);
+  const sheet = careerAgentSpreadsheet_().getSheetByName(CAREER_AGENT_INTAKE_SHEET);
   if (!sheet) return careerAgentJson_({ ok: false, error: "intake-sheet-missing" });
 
   const values = sheet.getDataRange().getDisplayValues();
@@ -87,7 +93,7 @@ function careerAgentAck_(queueIds, processedAt) {
   }
 
   const wanted = new Set(queueIds.map(String));
-  const sheet = SpreadsheetApp.openById(CAREER_AGENT_SPREADSHEET_ID).getSheetByName(CAREER_AGENT_INTAKE_SHEET);
+  const sheet = careerAgentSpreadsheet_().getSheetByName(CAREER_AGENT_INTAKE_SHEET);
   if (!sheet) return careerAgentJson_({ ok: false, error: "intake-sheet-missing" });
 
   const range = sheet.getDataRange();
@@ -115,7 +121,7 @@ function careerAgentAck_(queueIds, processedAt) {
 
 
 function cleanupCareerAgentQueue() {
-  const sheet = SpreadsheetApp.openById(CAREER_AGENT_SPREADSHEET_ID).getSheetByName(CAREER_AGENT_INTAKE_SHEET);
+  const sheet = careerAgentSpreadsheet_().getSheetByName(CAREER_AGENT_INTAKE_SHEET);
   if (!sheet) return;
 
   const values = sheet.getDataRange().getDisplayValues();
@@ -132,6 +138,12 @@ function cleanupCareerAgentQueue() {
       sheet.deleteRow(i + 1);
     }
   }
+}
+
+function careerAgentSpreadsheet_() {
+  const sheetId = PropertiesService.getScriptProperties().getProperty(CAREER_AGENT_SHEET_ID_PROPERTY);
+  if (!sheetId) throw new Error("bridge-not-initialized");
+  return SpreadsheetApp.openById(sheetId);
 }
 
 function careerAgentJson_(payload) {
