@@ -58,6 +58,22 @@ Before a scheduled mailbox read:
 9. On success, advance only that provider's watermark to the scan completion time.
 10. On failure, leave its watermark unchanged.
 
+## Terry OS summary handoff
+
+The optional Control Center handoff is local-only and aggregate-only.
+
+- `needsTerry` means exactly the current count of unreviewed
+  `pending_email_job_candidates`. It does not include other job stages.
+- The exported snapshot contains no candidate rows or free-form private content.
+- Status is `waiting_for_terry` when that count is greater than zero and `idle`
+  otherwise.
+- The snapshot refreshes on connected-mail intake, queue sync, and review actions, with
+  a five-minute heartbeat while JST is running.
+- Database/count failures export a fixed BLOCKED/error summary with count zero; raw
+  exception text does not cross the boundary.
+- The handoff is a private local file under the user's home directory by default. It
+  introduces no public endpoint, cloud store, connector permission, or paid service.
+
 ## Zero-cost constraint
 
 Career Agent V1 must not require a billing account or paid cloud infrastructure.
