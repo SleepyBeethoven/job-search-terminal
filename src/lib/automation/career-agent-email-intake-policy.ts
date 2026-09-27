@@ -4,7 +4,7 @@ export type CareerAgentEmailProvider = "gmail" | "outlook";
 
 export type EmailIntakeBoundaryDecision =
   | { allowed: true; receivedAt: string; lowerBound: string }
-  | { allowed: false; reason: "invalid-received-at" | "before-hard-cutoff" | "already-covered"; lowerBound: string };
+  | { allowed: false; reason: "invalid-received-at" | "missing-watermark" | "before-hard-cutoff" | "already-covered"; lowerBound: string };
 
 export function hardCutoffAt(): string {
   return contract.hardCutoffAt;
@@ -20,11 +20,16 @@ export function effectiveEmailIntakeLowerBound(lastSuccessfulScanAt?: string | n
 export function checkEmailIntakeBoundary(input: {
   receivedAt: string;
   lastSuccessfulScanAt?: string | null;
+  requireWatermark?: boolean;
 }): EmailIntakeBoundaryDecision {
   const receivedMs = Date.parse(input.receivedAt);
+  const hasValidWatermark = Boolean(input.lastSuccessfulScanAt) && Number.isFinite(Date.parse(input.lastSuccessfulScanAt ?? ""));
   const lowerBound = effectiveEmailIntakeLowerBound(input.lastSuccessfulScanAt);
   const lowerBoundMs = Date.parse(lowerBound);
 
+  if (input.requireWatermark && !hasValidWatermark) {
+    return { allowed: false, reason: "missing-watermark", lowerBound };
+  }
   if (!Number.isFinite(receivedMs)) {
     return { allowed: false, reason: "invalid-received-at", lowerBound };
   }
@@ -62,6 +67,7 @@ export function validateCareerAgentEmailIntakeContract(): string[] {
   if (contract.rules.readUnreadIsBoundary !== false) errors.push("read/unread status must not define the intake boundary");
   if (contract.rules.advanceWatermarkOnlyOnSuccess !== true) errors.push("watermark must advance only after a successful scan");
   if (contract.rules.providerFailuresAreIndependent !== true) errors.push("mailbox provider failures must remain independent");
+  if (contract.rules.apiRequiresWatermark !== true) errors.push("connected-mail API must require a provider watermark");
   if (contract.rules.storeFullEmailBody !== false) errors.push("queue must not store full email bodies");
   if (contract.rules.storeFullJobDescriptionInQueue !== false) errors.push("queue must not store full job descriptions");
   if (contract.rules.autoScore || contract.rules.autoTailor || contract.rules.autoApply) {
