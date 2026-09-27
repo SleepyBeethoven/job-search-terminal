@@ -424,6 +424,26 @@ function extractCandidates(input: {
         link,
       });
     }
+
+    // Gmail/Glassdoor-style digests often render company first and job title second.
+    // Keep this deliberately narrow so normal title -> company layouts are not double-counted.
+    if (
+      !/\.(?:txt|html?|eml)$/i.test(line) &&
+      !looksLikeTitle(line) &&
+      looksLikeCompany(line) &&
+      looksLikeTitle(next) &&
+      LOCATION_RE.test(third) &&
+      !looksLikeTitle(third)
+    ) {
+      pushCandidate({
+        title: next,
+        company: line,
+        location: third,
+        snippet: [line, next, third, input.lines[i + 3] ?? ""].filter(Boolean).join("\n"),
+        link,
+      });
+      i += 1;
+    }
   }
 
   return candidates;

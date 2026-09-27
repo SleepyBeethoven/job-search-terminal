@@ -5,6 +5,30 @@ import {
 } from "@/lib/scanner/email-job-alert-importer";
 
 describe("connector email job-alert intake", () => {
+  it("parses company-first Gmail digest layouts", () => {
+    const parsed = parseEmailJobAlertMessage({
+      provider: "gmail",
+      messageId: "gmail-company-first",
+      subject: "Your job listings",
+      from: "alerts@example.com",
+      date: "2026-09-27T00:00:00Z",
+      text: [
+        "Example Consulting",
+        "Project Management Consultant",
+        "Melbourne VIC",
+        "https://careers.example.com/jobs/12345",
+      ].join("\n"),
+    });
+
+    expect(parsed.candidates).toHaveLength(1);
+    expect(parsed.candidates[0]).toMatchObject({
+      company: "Example Consulting",
+      position: "Project Management Consultant",
+      location: "Melbourne VIC",
+      postingResolutionStatus: "resolved",
+    });
+  });
+
   it("recognises Terry OS role families that the upstream UX-focused matcher missed", () => {
     const parsed = parseEmailJobAlertMessage({
       provider: "outlook",
