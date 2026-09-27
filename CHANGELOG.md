@@ -15,6 +15,22 @@ the numbers mean and when they change.
 
 ---
 
+## 0.21.0 — 2026-09-27 — Free Google Sheet bridge
+
+**Added**
+
+- JST can now pull Career Agent leads from the private Google Sheet intake queue through a zero-cost Google Apps Script web app. The bridge is off unless its URL and secret are configured.
+- When enabled, JST syncs once at startup and every five minutes while running, placing cloud leads into the existing **Pending Review** flow instead of adding jobs automatically.
+- The Apps Script setup creates a daily cleanup trigger that removes intake rows older than seven days.
+
+**Safety**
+
+- The bridge sends its long random secret in the HTTPS POST body rather than the URL.
+- A Sheet row is acknowledged as **Synced to JST** only after the local pending write succeeds. Retries use a stable queue-derived id, so an acknowledgement failure does not create duplicate local candidates.
+- The bridge does not score, tailor, apply, send messages, or require a billing-backed Google Cloud service.
+
+---
+
 ## 0.20.0 — 2026-09-27 — Safe incremental mailbox intake
 
 **Added**
