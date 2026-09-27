@@ -8,8 +8,14 @@ MACHINE_TYPE="${MACHINE_TYPE:-e2-micro}"
 BOOT_DISK_SIZE="${BOOT_DISK_SIZE:-10GB}"
 DATA_DISK_SIZE="${DATA_DISK_SIZE:-10GB}"
 SERVICE_ACCOUNT_NAME="${SERVICE_ACCOUNT_NAME:-terry-career-agent}"
-CAREER_INTAKE_SPREADSHEET_ID="${CAREER_INTAKE_SPREADSHEET_ID:-1MBjx5Oq6lTUnELZydgnyiedHklpH2uM_Xcf_2nrcgvg}"
+CAREER_INTAKE_SPREADSHEET_ID="${CAREER_INTAKE_SPREADSHEET_ID:-}"
 CAREER_INTAKE_SHEET_NAME="${CAREER_INTAKE_SHEET_NAME:-Intake}"
+
+if [[ -z "${CAREER_INTAKE_SPREADSHEET_ID}" ]]; then
+  echo "CAREER_INTAKE_SPREADSHEET_ID is required for the private intake bridge." >&2
+  echo "Example: CAREER_INTAKE_SPREADSHEET_ID=YOUR_PRIVATE_SHEET_ID bash deploy/google-cloud/create-vm.sh" >&2
+  exit 1
+fi
 
 PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
 if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
