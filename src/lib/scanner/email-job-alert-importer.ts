@@ -591,8 +591,11 @@ function isRelevantEmailJobLink(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-    const haystack = `${url.hostname}${url.pathname}${url.search}`.toLowerCase();
-    if (GENERIC_LINK_RE.test(haystack)) return false;
+    const pathHaystack = `${url.hostname}${url.pathname}`.toLowerCase();
+    const haystack = `${pathHaystack}${url.search}`.toLowerCase();
+    // Tracking query parameters are normal on job-alert links. Reject tracking/pixel
+    // endpoints by path, not a legitimate posting merely because its query has trackingId.
+    if (GENERIC_LINK_RE.test(pathHaystack)) return false;
     return /(job|career|greenhouse|lever|ashby|workday|linkedin|indeed|monster|wellfound|smartrecruiters|icims|apply|posting|requisition)/i.test(haystack);
   } catch {
     return false;
@@ -605,8 +608,9 @@ function isActualJobPostingUrl(rawUrl: string): boolean {
     if (url.protocol !== "http:" && url.protocol !== "https:") return false;
     const host = url.hostname.toLowerCase();
     const path = url.pathname.toLowerCase();
-    const haystack = `${host}${path}${url.search}`.toLowerCase();
-    if (GENERIC_LINK_RE.test(haystack)) return false;
+    const pathHaystack = `${host}${path}`.toLowerCase();
+    const haystack = `${pathHaystack}${url.search}`.toLowerCase();
+    if (GENERIC_LINK_RE.test(pathHaystack)) return false;
     if (/\b(search|savedsearch|job-alert|jobalert|recommended|recommendations)\b/i.test(path)) return false;
 
     if (host.includes("linkedin.com")) {
