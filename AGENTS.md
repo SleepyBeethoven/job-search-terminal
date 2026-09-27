@@ -375,6 +375,42 @@ workflow into a single universal resume. Preserve the multi-lane model.
 - Meet WCAG 2.2 AA by default: visible focus, semantic structure, sufficient
   contrast, non-color-only status, labels for controls, reduced motion support.
 
+## Mandatory QA Gate
+
+Central QA is a required gate for workflows that can create durable side effects or
+silently expand scope. Do not treat these as "small config changes" and do not skip
+review because the implementation looks simple.
+
+QA is mandatory before enabling or materially changing any of:
+
+- mailbox, file, connector, API, or database intake
+- scheduled or recurring automation
+- synchronization between systems
+- retention, cleanup, archive, or deletion behavior
+- external writes, messages, submissions, or other actions outside JST
+- authentication, billing, quota, or cost-bearing infrastructure
+- any workflow's first run, migration, historical backfill, or bootstrap behavior
+
+For intake and scheduled automation, QA must explicitly check:
+
+1. **First-run boundary** — the exact starting timestamp/range is defined. Missing
+   previous state must never mean "scan everything".
+2. **Incremental watermark** — each source has durable last-success state; read/unread
+   status is not a substitute for a timestamp boundary.
+3. **Failure semantics** — a failed source does not advance its watermark, and one
+   source failing does not advance another.
+4. **Duplicate/replay behavior** — retries do not create avoidable duplicate work.
+5. **Scope and stop condition** — the workflow stops at its declared handoff instead of
+   cascading into scoring, tailoring, applying, or more research.
+6. **Cost/quota** — the path stays inside the user's declared budget and does not add a
+   billing-backed service when the requirement is zero-cost.
+7. **Retention/privacy** — store only what is needed, for only as long as needed.
+8. **Execution proof** — tests or observable state demonstrate the rules actually hold.
+
+QA returns **PASS**, **PASS WITH FIXES**, or **BLOCK**. A missing first-run boundary,
+missing durable watermark for recurring intake, unintended paid infrastructure, or an
+external action without approval is a **BLOCK**.
+
 ## Safety
 
 See [`DATA_CONTRACT.md`](DATA_CONTRACT.md) for the authoritative user-layer /
