@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "mode": "incremental-only",
+  "timezone": "Asia/Shanghai",
+  "scheduleHours": [5, 17],
+  "providers": ["gmail", "outlook"],
+  "hardCutoffAt": "2026-09-27T11:07:00+08:00",
+  "watermarkScope": "per-provider",
+  "watermarkStore": {
+    "type": "google-sheet",
+    "spreadsheetId": "1MBjx5Oq6lTUnELZydgnyiedHklpH2uM_Xcf_2nrcgvg",
+    "stateTab": "State",
+    "intakeTab": "Intake"
+  },
+  "rules": {
+    "historicalBackfillByDefault": false,
+    "readUnreadIsBoundary": false,
+    "advanceWatermarkOnlyOnSuccess": true,
+    "providerFailuresAreIndependent": true,
+    "storeFullEmailBody": false,
+    "storeFullJobDescriptionInQueue": false,
+    "autoScore": false,
+    "autoTailor": false,
+    "autoApply": false
+  },
+  "qa": {
+    "mandatory": true,
+    "checks": [
+      "state-present",
+      "hard-cutoff-valid",
+      "last-success-not-before-cutoff",
+      "incremental-window-only",
+      "failure-does-not-advance-watermark",
+      "no-historical-backfill",
+      "no-expensive-downstream-work"
+    ]
+  }
+}
