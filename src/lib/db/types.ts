@@ -90,6 +90,9 @@ export type JobRecord = {
   livenessReason?: string;
   livenessEvidenceUrl?: string;
   cleanupArchiveReason?: string;
+  retentionPinned: boolean;
+  retentionCompactedAt: string;
+  retentionReason: string;
   livenessStatus: string;
   livenessCheckedAt: string;
   scopeStatus: string;
