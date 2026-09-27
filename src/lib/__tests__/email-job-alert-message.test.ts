@@ -32,6 +32,31 @@ describe("connector email job-alert intake", () => {
     ).toBe("https://www.linkedin.com/jobs/view/1234567890");
   });
 
+
+  it("unwraps Outlook SafeLinks around LinkedIn postings", () => {
+    const target = "https://www.linkedin.com/comm/jobs/view/3141592653/?trackingId=mail-track&refId=mail-ref";
+    const safeLink = `https://example.safelinks.protection.outlook.com/?url=${encodeURIComponent(target)}&data=opaque`;
+
+    expect(canonicalizeJobPostingUrl(safeLink)).toBe(
+      "https://www.linkedin.com/jobs/view/3141592653"
+    );
+
+    const parsed = parseEmailJobAlertMessage({
+      provider: "outlook",
+      messageId: "outlook-safe-link",
+      subject: "LinkedIn job alert",
+      from: "jobalerts-noreply@linkedin.com",
+      date: "2026-09-27T00:00:00Z",
+      text: [
+        "AI Quality Analyst at Example Labs, Sydney",
+        safeLink,
+      ].join("\n"),
+    });
+
+    expect(parsed.candidates).toHaveLength(1);
+    expect(parsed.candidates[0].url).toBe("https://www.linkedin.com/jobs/view/3141592653");
+  });
+
   it("dedupes the same posting across Gmail and Outlook tracking links", () => {
     const outlook = parseEmailJobAlertMessage({
       provider: "outlook",
