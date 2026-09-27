@@ -1,7 +1,7 @@
 {
   "name": "job-search-terminal",
   "version": "0.20.0",
-  "description": "A free, source-available, local-first job-search dashboard that helps job seekers scan roles, score fit with AI, generate tailored resumes, track applications, and prepare for interviews without accounts, subscriptions, or cloud storage.",
+  "description": "A free, source-available, local-first job-search dashboard that helps job seekers scan roles, score fit with AI, generate tailored resumes, track applications, and prepare for interviews, with optional lightweight cloud staging for connected inbox intake.",
   "license": "CC-BY-NC-4.0",
   "author": "UX Design Lab",
   "homepage": "https://pavel.ux.business/job-search-terminal/",
