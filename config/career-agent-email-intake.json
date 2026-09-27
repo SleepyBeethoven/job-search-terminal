@@ -2,8 +2,14 @@
   "version": 1,
   "mode": "incremental-only",
   "timezone": "Asia/Shanghai",
-  "scheduleHours": [5, 17],
-  "providers": ["gmail", "outlook"],
+  "scheduleHours": [
+    5,
+    17
+  ],
+  "providers": [
+    "gmail",
+    "outlook"
+  ],
   "hardCutoffAt": "2026-09-27T11:07:00+08:00",
   "watermarkScope": "per-provider",
   "watermarkStore": {
@@ -21,7 +27,8 @@
     "storeFullJobDescriptionInQueue": false,
     "autoScore": false,
     "autoTailor": false,
-    "autoApply": false
+    "autoApply": false,
+    "apiRequiresWatermark": true
   },
   "qa": {
     "mandatory": true,
@@ -29,6 +36,7 @@
       "state-present",
       "hard-cutoff-valid",
       "last-success-not-before-cutoff",
+      "api-requires-provider-watermark",
       "incremental-window-only",
       "failure-does-not-advance-watermark",
       "no-historical-backfill",
