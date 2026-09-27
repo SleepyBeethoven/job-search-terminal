@@ -77,8 +77,13 @@ workflows. This path is **incremental-only** and is governed by
   or Outlook message. A missing or invalid watermark fails closed. This is defense in
   depth; the scheduled scanner should already have filtered the message before sending it.
 
-The queue is only a staging area. Scoring, resume tailoring, application
-preparation, and submission are outside this intake step.
+The queue is only a staging area. When the optional free Apps Script bridge is
+configured, JST pulls `Pending Review` rows into its existing local approval queue on
+startup and every five minutes while running. It acknowledges a Sheet row only after the
+local pending write succeeds. See [Zero-cost Google Sheet bridge](google-apps-script-bridge.md).
+
+Scoring, resume tailoring, application preparation, and submission are outside this
+intake step and remain behind the existing human approval flow.
 
 ## Resolved Jobs And Leads
 
