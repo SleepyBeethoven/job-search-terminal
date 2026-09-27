@@ -701,13 +701,15 @@ export const helpPages: HelpPage[] = [
         id: "email-alerts",
         title: "Import job alert emails",
         intro:
-          "Job boards send alert emails full of postings. Rather than copying each one out by hand, save the email as a file and drop it into a folder the app watches.",
+          "You can still import saved email files by hand. Terry OS can also receive new Gmail and Outlook job alerts through a separately connected automation.",
         bullets: [
-          "Save the email from your mail program, then put the file into the `data/email-job-alert-imports/` folder inside the app\'s folder while the app is running. It accepts `.eml`, `.html`, and `.txt` files.",
-          "The app reads the file and lists what it found, but adds nothing yet. You approve each one, or dismiss it.",
-          "Anything you do not act on stays waiting. Nothing is added behind your back.",
+          "For manual import, save the email from your mail program and put it into the `data/email-job-alert-imports/` folder while the app is running. It accepts `.eml`, `.html`, and `.txt` files.",
+          "For connected Gmail and Outlook intake, the automation reads only new mail after its saved timestamp. It does not use unread status, so old unread job alerts are not treated as new.",
+          "The first connected-mail cutoff is 27 September 2026 at 11:07 Asia/Shanghai. Mail at or before that time is outside the intake window unless you explicitly ask for a historical backfill.",
+          "Gmail and Outlook keep separate last-success timestamps. If one mailbox scan fails, that mailbox keeps its old timestamp so the missed interval can be retried; the other mailbox can still move forward.",
+          "Connected intake stores lightweight job fields and a short snippet in the private queue, not the full email body or full job description.",
+          "The app lists what it found but adds nothing to your job list until you approve it. Intake also stops before scoring, resume tailoring, or applying.",
           "Alert emails often link back to the job board rather than the employer. Open the job and press Resolve posting to go looking for the real posting.",
-          "The app never connects to your mailbox. It only reads files you put in that folder yourself.",
         ],
       },
       {
@@ -1162,7 +1164,7 @@ export const helpPages: HelpPage[] = [
     readTime: "10 min",
     icon: "lock",
     highlights: [
-      "Your resumes, jobs, notes, and application history sit on your own computer. There is no account and no server holding them.",
+      "Your resumes, full job records, notes, and application history stay on your own computer. Connected mailbox intake may stage a few lightweight job fields and timestamps in your private Google Sheet.",
       "When you ask for something AI-powered, the relevant text goes to the service you chose. If that matters to you, use Ollama and nothing leaves at all.",
       "The app never applies for a job, never sends a message, and never fills in a form for you.",
     ],
@@ -1190,11 +1192,12 @@ export const helpPages: HelpPage[] = [
           "If your first service runs out of credits, the app moves on to the next one in your list. A bar at the top of the page tells you when that is happening, so you are never surprised about which service received your text.",
           "If a document is genuinely sensitive, do not run a cloud AI feature on it. Use Ollama for that one, or handle it yourself.",
           "If you think anyone else has seen your key, delete it on the service\'s website and make a new one.",
+          "If you use Terry OS connected mailbox intake, Gmail and Outlook job alerts can place lightweight fields — company, title, location, posting link, a short snippet, and scan timestamps — in your private Google Sheet queue. Full email bodies, full job descriptions, resumes, and application material are not stored there.",
           "Once a day the app asks GitHub whether a newer version of Job Search Terminal exists. It sends one code identifying a version that is already published on GitHub — nothing about you, your jobs, or your resumes, and nothing you have written yourself.",
         ],
         callout: {
           title: "Fully private with Ollama",
-          body: "Put Ollama at the top of your list in Settings → AI Provider, leave Resume writing uses on Same as provider priority, and keep Ollama running. Every AI request — job descriptions, resume content, application answers — is then handled on your own computer. For nothing to leave even when Ollama stops, switch off the other services in the list: the app only falls back to services that are switched on.",
+          body: "Put Ollama at the top of your list in Settings → AI Provider, leave Resume writing uses on Same as provider priority, and keep Ollama running. AI requests are then handled on your own computer. If Terry OS connected mailbox intake is enabled, its lightweight Google Sheet queue is still a separate cloud staging path; turn that automation off as well if you want no Career Agent data to leave the computer.",
         },
       },
       {
@@ -1346,6 +1349,16 @@ export const helpPages: HelpPage[] = [
           "Try a simpler ATS-friendly resume if extraction is poor.",
           "Make sure Chrome or a compatible Chromium browser is installed for PDF generation.",
           "If an employer requires DOCX instead of PDF, export or convert outside the app according to the employer instructions.",
+        ],
+      },
+      {
+        id: "email-intake-state",
+        title: "Connected email intake says BLOCKED or stops before scanning",
+        bullets: [
+          "This is a safety stop. The automation checks its Gmail and Outlook timestamps before it reads either mailbox.",
+          "If the State tab is missing, a timestamp is malformed, or a last-success timestamp is earlier than the hard cutoff, the affected mailbox is not scanned.",
+          "Do not fix this by changing the job alerts to unread-only or by removing the cutoff. The saved timestamp is what prevents a first run from reading your old mailbox history.",
+          "A failed mailbox scan does not move its last-success timestamp. The next successful run should retry from the same point.",
         ],
       },
       {

@@ -3,12 +3,15 @@ import {
   importEmailJobAlertMessage,
   type NormalizedEmailJobAlertMessage,
 } from "@/lib/scanner/email-job-alert-importer";
+import { checkEmailIntakeBoundary } from "@/lib/automation/career-agent-email-intake-policy";
 
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_CHARS = 1_000_000;
 
-type IntakeBody = Partial<NormalizedEmailJobAlertMessage>;
+type IntakeBody = Partial<NormalizedEmailJobAlertMessage> & {
+  lastSuccessfulScanAt?: string;
+};
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +21,8 @@ export async function POST(req: Request) {
     const subject = String(body.subject ?? "").trim();
     const from = String(body.from ?? "").trim();
     const date = String(body.date ?? "").trim();
+    const receivedAt = String(body.receivedAt ?? body.date ?? "").trim();
+    const lastSuccessfulScanAt = String(body.lastSuccessfulScanAt ?? "").trim();
     const text = String(body.text ?? "");
     const html = String(body.html ?? "");
 
@@ -31,12 +36,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "email body is too large" }, { status: 413 });
     }
 
+    if (provider === "gmail" || provider === "outlook") {
+      const boundary = checkEmailIntakeBoundary({
+        receivedAt,
+        lastSuccessfulScanAt,
+        requireWatermark: true,
+      });
+      if (!boundary.allowed) {
+        return NextResponse.json({
+          success: true,
+          ignored: true,
+          reason: boundary.reason,
+          lowerBound: boundary.lowerBound,
+        });
+      }
+    }
+
     const result = importEmailJobAlertMessage({
       provider,
       messageId,
       subject,
       from,
       date,
+      receivedAt,
       text,
       html,
     });

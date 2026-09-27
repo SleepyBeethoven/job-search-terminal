@@ -54,6 +54,32 @@ Candidates that match your criteria are pre-checked. Off-target candidates
 appear unchecked but remain visible for manual selection. Candidates you leave
 unchecked stay in the pending queue until you add or dismiss them.
 
+
+## Connected Gmail And Outlook Intake
+
+Terry OS can also receive normalized messages from connected Gmail and Outlook
+workflows. This path is **incremental-only** and is governed by
+`config/career-agent-email-intake.json` plus the Mandatory QA Gate in
+`AGENTS.md`.
+
+- The first-run hard cutoff is **2026-09-27 11:07 Asia/Shanghai**.
+- Gmail and Outlook keep separate durable `last_success_at` watermarks in the
+  private Google Sheet `Terry OS — Career Agent Intake Queue`, tab `State`.
+- A scan may inspect only messages received strictly after that provider's
+  `last_success_at`.
+- Read/unread status is not a scan boundary.
+- A failed mailbox scan must not advance its watermark.
+- Historical backfill is disabled unless Terry explicitly asks for it.
+- The cloud queue stores structured job fields and a short snippet only, never the
+  full email body or full job description.
+- The connector intake API requires the caller to supply that provider's current
+  `last_success_at` watermark and applies the boundary again before parsing a Gmail
+  or Outlook message. A missing or invalid watermark fails closed. This is defense in
+  depth; the scheduled scanner should already have filtered the message before sending it.
+
+The queue is only a staging area. Scoring, resume tailoring, application
+preparation, and submission are outside this intake step.
+
 ## Resolved Jobs And Leads
 
 If the email contains a direct job posting URL, the candidate is shown with a
@@ -74,7 +100,9 @@ import.
 
 ## Privacy And Safety
 
-The importer does not connect to an email account, does not send email data to
-AI providers, and does not run web search automatically. It stores only minimal
-evidence snippets and extracted links needed to explain where the lead came
-from.
+The local file importer does not connect to an email account. Connected Gmail or
+Outlook intake happens through the separately authorized Career Agent workflow;
+JST itself does not store mailbox credentials. Neither path runs web search
+automatically. The local importer stores only minimal evidence snippets and
+extracted links, and the Google Sheet staging queue stores only lightweight
+structured fields plus a short snippet.

@@ -599,17 +599,23 @@ status, posting maintenance, and bulk tools.
   currently uses it, so a saved filter from before per-site labels existed stays
   selectable — and it still matches every source without a browser-board name.
 - **Email job alert imports** — drop `.eml`, `.html`, or `.txt` files into
-  `data/email-job-alert-imports/`. The local watcher parses them and queues
-  extracted candidates in the **Email approval modal** — jobs are never added
-  automatically. Each candidate is pre-scored against your saved target roles
-  and positive title filters (**Matches criteria** / **Off target** / **No
-  criteria set**). Candidates matching your criteria are pre-checked; off-target
-  ones appear unchecked. Choose **Add to jobs** or **Dismiss selected** per
-  candidate, or **Dismiss all** to clear the queue. Unchecked candidates stay
-  pending until you add or dismiss them. The modal appears on both the Dashboard
-  and Jobs pages and polls every 8 seconds for new arrivals. Jobs without a
-  direct posting URL are imported as email leads that can be resolved via
-  **Resolve posting** on the job detail page.
+  `data/email-job-alert-imports/`, or send normalized Gmail/Outlook messages
+  through the connector intake route. The local watcher/parser queues extracted
+  candidates in the **Email approval modal** — jobs are never added automatically.
+  Connector intake is incremental-only for Terry OS: the hard baseline is
+  **2026-09-27 11:07 Asia/Shanghai**, read/unread state is never used as the
+  boundary, and messages at or before the baseline are ignored before their body
+  is parsed. The scheduled connector workflow keeps independent Gmail and Outlook
+  `last_success_at` watermarks in the private Google Sheet intake queue; a failed
+  provider scan does not advance its watermark. Each candidate is pre-scored
+  against your saved target roles and positive title filters (**Matches criteria**
+  / **Off target** / **No criteria set**). Candidates matching your criteria are
+  pre-checked; off-target ones appear unchecked. Choose **Add to jobs** or
+  **Dismiss selected** per candidate, or **Dismiss all** to clear the queue.
+  Unchecked candidates stay pending until you add or dismiss them. The modal
+  appears on both the Dashboard and Jobs pages and polls every 8 seconds for new
+  arrivals. Jobs without a direct posting URL are imported as email leads that
+  can be resolved via **Resolve posting** on the job detail page.
 - **Table width** — the Jobs table fits inside the Shell's `max-w-6xl` container
   rather than widening the page. Grid wrappers carry `min-w-0` (grid items
   otherwise default to `min-width: auto`, so one wide descendant stretches the

@@ -15,6 +15,24 @@ the numbers mean and when they change.
 
 ---
 
+## 0.20.0 — 2026-09-27 — Safe incremental mailbox intake
+
+**Added**
+
+- Career Agent email intake now has an explicit safety contract with a hard first-run cutoff of 27 September 2026 at 11:07 Asia/Shanghai.
+- Gmail and Outlook use independent durable last-success watermarks in the private Google Sheet intake queue. Failed scans do not advance the affected watermark.
+- Added a Mandatory QA Gate for scheduled automation, data intake, synchronization, retention, external writes, first-run behavior, authentication and cost changes.
+- Added `npm run career-agent:qa` plus automated tests for the intake contract and API cutoff. Pull-request CI now runs this gate automatically.
+
+**Changed**
+
+- Connected Gmail/Outlook intake is incremental-only by default. Read/unread status is never used as the boundary and historical backfill requires an explicit request.
+- The connector intake API rejects historical or timestamp-less connected-mail messages before parsing their bodies, and fails closed if the caller does not supply the provider's current last-success watermark.
+- The Career Agent plan is now zero-cost only. Billing-backed Compute Engine deployment files have been removed from this fork; the cloud staging layer is the private Google Sheet queue instead.
+- Help and technical documentation now describe the connected mailbox path, its watermarks, and its BLOCK safety state.
+
+---
+
 ## 0.19.0 — 2026-09-27 — Cloud retention and low-storage operation
 
 **Added**
