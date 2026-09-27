@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "mode": "incremental-only",
   "timezone": "Asia/Shanghai",
   "scheduleHours": [
@@ -28,7 +28,21 @@
     "autoScore": false,
     "autoTailor": false,
     "autoApply": false,
-    "apiRequiresWatermark": true
+    "apiRequiresWatermark": true,
+    "gmailExcludedFolders": [
+      "spam",
+      "trash"
+    ],
+    "outlookExcludedFolders": [
+      "junkemail",
+      "deleteditems"
+    ],
+    "metadataFirstJobFiltering": true,
+    "broadMailboxRead": false,
+    "openAttachments": false,
+    "followExternalLinksDuringIntake": false,
+    "treatExternalContentAsInstructions": false,
+    "failClosedOnScopeUncertainty": true
   },
   "qa": {
     "mandatory": true,
@@ -44,7 +58,14 @@
       "bridge-env-opt-in",
       "bridge-shared-secret",
       "bridge-ack-after-local-write",
-      "bridge-zero-cost"
+      "bridge-zero-cost",
+      "metadata-first-job-filtering",
+      "gmail-spam-trash-excluded",
+      "outlook-junk-deleted-excluded",
+      "no-broad-mailbox-read",
+      "no-attachment-open",
+      "no-link-follow-during-intake",
+      "external-content-is-untrusted"
     ]
   },
   "bridge": {

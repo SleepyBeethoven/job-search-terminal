@@ -22,5 +22,8 @@ console.log("- zero-cost Apps Script bridge is opt-in and syncs only to Pending 
 console.log("- cloud rows are acknowledged only after a successful local queue write");
 console.log("- failed scans do not advance watermarks");
 console.log("- no historical backfill by default");
+console.log("- Gmail excludes Spam/Trash; Outlook excludes Junk/Deleted");
+console.log("- metadata-first filtering; no broad personal-mail read");
+console.log("- no attachment open, link follow, or instruction following from email content");
 console.log("- zero-cost / no billing-backed infrastructure");
 console.log("- no scoring, tailoring, or applying during intake");

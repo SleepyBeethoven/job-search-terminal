@@ -15,6 +15,25 @@ the numbers mean and when they change.
 
 ---
 
+## 0.23.0 — 2026-09-27 — Internet safety baseline
+
+**Added**
+
+- Security Agent v0.2 now treats web pages, emails, attachments, API payloads and other external content as untrusted data by default. External content cannot override agent instructions, ambiguous scope fails closed, and local-only services stay loopback-only unless separately reviewed.
+- Connected mailbox intake now has a machine-checked least-privilege contract: Gmail excludes Spam/Trash, Outlook excludes Junk/Deleted Items, candidate selection is metadata-first, attachments are not opened, and links are not followed during intake.
+
+**Changed**
+
+- Career Agent QA now blocks broad personal-mail reads, unsafe folder scope, attachment opening, link-following during intake, or treating email content as instructions.
+- The Security Gate now validates the Internet Safety Baseline in CI in addition to scanning public Git for secrets, private identifiers and runtime user data.
+
+**Safety**
+
+- If a connector cannot enforce the declared mailbox scope, the scan must stop without advancing that provider's watermark.
+- Consequential external actions remain behind explicit human approval unless a narrowly approved automation contract covers that exact action.
+
+---
+
 ## 0.22.0 — 2026-09-27 — Security Agent and public-repo privacy gate
 
 **Added**
