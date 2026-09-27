@@ -47,8 +47,10 @@ This is the only manual setup required for the bridge.
    `deploy/google-apps-script/career-agent-queue.gs`.
 4. Save the project.
 5. Run `initializeCareerAgentBridge` once and approve the requested Google
-   authorization. It creates a long random bridge secret and the free daily
-   seven-day cleanup trigger.
+   authorization. Because the script is opened from the Career Agent Sheet, initialization
+   stores that Sheet's ID privately in Script Properties, creates a long random bridge
+   secret, and creates the free daily seven-day cleanup trigger. The Sheet ID is not
+   hard-coded in the public repository.
 6. Copy the logged value beginning with `CAREER_AGENT_BRIDGE_SECRET=`.
 7. Choose **Deploy → New deployment → Web app**.
 8. Execute as the deploying user. Allow the web app to be reached by **Anyone**

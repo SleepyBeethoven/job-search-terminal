@@ -1195,6 +1195,7 @@ export const helpPages: HelpPage[] = [
           "If a document is genuinely sensitive, do not run a cloud AI feature on it. Use Ollama for that one, or handle it yourself.",
           "If you think anyone else has seen your key, delete it on the service\'s website and make a new one.",
           "If you use Terry OS connected mailbox intake, Gmail and Outlook job alerts can place lightweight fields — company, title, location, posting link, a short snippet, and scan timestamps — in your private Google Sheet queue. Full email bodies, full job descriptions, resumes, and application material are not stored there.",
+          "The source repository is public, so it must not contain your Sheet ID, personal mailbox address, resume files, API keys, or other private identifiers. The Career Agent Sheet ID and bridge secret are kept in private runtime settings instead.",
           "Once a day the app asks GitHub whether a newer version of Job Search Terminal exists. It sends one code identifying a version that is already published on GitHub — nothing about you, your jobs, or your resumes, and nothing you have written yourself.",
         ],
         callout: {

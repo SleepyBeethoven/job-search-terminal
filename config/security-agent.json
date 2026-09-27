@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "agent": {
+    "id": "security",
+    "name": "Security",
+    "type": "governance",
+    "outputs": ["PASS", "PASS WITH FIXES", "BLOCK"]
+  },
+  "repository": {
+    "assumePublic": true,
+    "allowSecrets": false,
+    "allowPersonalContactDetails": false,
+    "allowPrivateCloudIdentifiers": false,
+    "allowRuntimeUserData": false
+  },
+  "runtimeData": {
+    "allowedTrackedPlaceholders": [
+      "data/.gitkeep",
+      "output/.gitkeep",
+      "assets/.gitkeep"
+    ],
+    "privatePaths": [
+      "data/",
+      "output/",
+      "assets/",
+      "memory/"
+    ]
+  },
+  "privateConfiguration": {
+    "storage": [
+      ".env / environment variables",
+      "Google Apps Script Properties",
+      "private Google Sheet State"
+    ],
+    "neverPublic": [
+      "API keys",
+      "OAuth credentials",
+      "bridge secrets",
+      "resume files",
+      "local SQLite databases",
+      "personal email addresses",
+      "phone numbers",
+      "home addresses",
+      "private Google Sheet identifiers"
+    ]
+  },
+  "externalDataRule": {
+    "default": "deny",
+    "requireExplicitContract": true,
+    "requireRetentionRule": true,
+    "requireLeastData": true
+  }
+}

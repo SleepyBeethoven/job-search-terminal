@@ -15,6 +15,25 @@ the numbers mean and when they change.
 
 ---
 
+## 0.22.0 — 2026-09-27 — Security Agent and public-repo privacy gate
+
+**Added**
+
+- Added **Security Agent v0.1**, a governance gate separate from QA. Pull-request CI now checks tracked files for runtime user data, personal mailbox addresses, private Google Sheet identifiers, and common hard-coded credential patterns.
+- Added `npm run security:check` and automated tests for the public-repository privacy boundary.
+
+**Changed**
+
+- Career Agent no longer hard-codes the private Google Sheet ID in public configuration or Apps Script source. One-time Apps Script initialization discovers the bound Sheet and stores its ID privately in Script Properties.
+- The repository contract now treats private cloud identifiers as user data even when they are not authentication secrets.
+
+**Safety**
+
+- This public fork continues to rely on GitHub's native secret scanning as one layer, while Security Agent covers Terry OS-specific privacy rules that generic secret scanning does not know about.
+- A previously committed Sheet ID is treated as a non-secret historical identifier: current code no longer exposes it, while actual credentials would require immediate rotation.
+
+---
+
 ## 0.21.0 — 2026-09-27 — Free Google Sheet bridge
 
 **Added**

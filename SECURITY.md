@@ -18,6 +18,16 @@ Include:
 - Affected files or workflows
 - Suggested fix, if known
 
+## Security Agent
+
+This Terry OS fork uses a mandatory Security Agent gate for public-repository privacy
+and credential boundaries. Run `npm run security:check`; CI runs the same check before
+tests and build. See [docs/security-agent.md](docs/security-agent.md).
+
+GitHub's native public-repository secret scanning is an additional layer. The local gate
+also checks Terry OS-specific privacy boundaries such as private Sheet identifiers and
+tracked runtime user data.
+
 ## Sensitive data
 
 Job Search Terminal may store sensitive personal information locally, including resumes, job applications, generated documents, career history, and API keys.
@@ -30,6 +40,7 @@ Do not commit or share:
 - Generated resumes
 - Application exports
 - Personal contact details
+- Private Google Sheet / connector identifiers
 - Screenshots exposing private information
 
 ## AI provider keys
