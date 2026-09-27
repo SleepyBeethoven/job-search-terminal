@@ -26,6 +26,7 @@ import {
   saveEvaluationCorrection,
   saveJobLiveness,
   saveStory,
+  setJobRetentionPinned,
   setStoryJobLink,
   unarchiveJob,
   updateApplicationStatus,
@@ -266,6 +267,15 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
     revalidatePath("/archived");
   }
 
+  async function toggleRetentionPinAction() {
+    "use server";
+    const current = getJobById(id);
+    if (!current) return;
+    setJobRetentionPinned(id, !current.retentionPinned);
+    revalidatePath(`/jobs/${id}`);
+    revalidatePath("/dashboard");
+  }
+
   async function archiveJobAction() {
     "use server";
     archiveJob(id);
@@ -388,6 +398,15 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
               action={updateStatusAction}
               currentStatus={application?.status ?? job.status}
             />
+            <form action={toggleRetentionPinAction}>
+              <button
+                className="inline-flex min-h-8 items-center justify-center rounded-control border border-border px-3 py-1 text-sm font-medium text-muted hover:text-ink"
+                title={job.retentionPinned ? "Allow normal retention cleanup again" : "Keep this job even when it becomes inactive"}
+                type="submit"
+              >
+                {job.retentionPinned ? "Unpin" : "Pin"}
+              </button>
+            </form>
             {job.archived ? (
               <form action={unarchiveJobAction}>
                 <button
