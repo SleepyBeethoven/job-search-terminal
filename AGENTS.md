@@ -377,6 +377,28 @@ workflow into a single universal resume. Preserve the multi-lane model.
 - Meet WCAG 2.2 AA by default: visible focus, semantic structure, sufficient
   contrast, non-color-only status, labels for controls, reduced motion support.
 
+## Mandatory Security Gate
+
+Security is a governance agent, separate from QA. QA asks whether a workflow works
+correctly; Security asks whether a correctly working workflow could expose private data,
+credentials, or access.
+
+Security review is mandatory before enabling or materially changing:
+
+- authentication, tokens, secrets, OAuth, or account/session handling
+- email, Drive, calendar, contacts, resumes, profile data, or other personal information
+- public GitHub files, public endpoints, webhooks, exports, or sharing permissions
+- any new external data store or connector
+- logs, screenshots, analytics, backups, retention, or deletion involving sensitive data
+
+Assume this repository is public. Never commit personal contact details, resumes,
+runtime databases, generated application material, private cloud identifiers, or
+credentials. Private values belong in environment variables, Script Properties, or
+another explicitly approved private store.
+
+Run `npm run security:check`. A Security **BLOCK** prevents merge/deploy. See
+[docs/security-agent.md](docs/security-agent.md).
+
 ## Mandatory QA Gate
 
 Central QA is a required gate for workflows that can create durable side effects or
