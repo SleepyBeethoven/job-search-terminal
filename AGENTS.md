@@ -456,6 +456,9 @@ After any change, run:
 ```bash
 npm run lint
 npm run typecheck
+npm run security:check
+npm run career-agent:qa
+npm run test
 npm run build
 ```
 
