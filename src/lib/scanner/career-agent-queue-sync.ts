@@ -35,6 +35,7 @@ type SyncDependencies = {
   fetchImpl?: typeof fetch;
   savePending?: (candidates: PendingEmailJobCandidateInput[]) => void;
   getPendingByIds?: (ids: string[]) => unknown[];
+  logActivityFn?: typeof logActivity;
 };
 
 export type CareerAgentQueueSyncResult = {
@@ -161,6 +162,7 @@ export async function syncCareerAgentQueue(
   const fetchImpl = deps.fetchImpl ?? fetch;
   const savePending = deps.savePending ?? savePendingEmailCandidates;
   const getPendingByIds = deps.getPendingByIds ?? getPendingEmailCandidatesByIds;
+  const logActivityFn = deps.logActivityFn ?? logActivity;
 
   const pending = await postBridge(config.url, {
     token: config.token,
@@ -206,7 +208,7 @@ export async function syncCareerAgentQueue(
   };
 
   if (rows.length > 0) {
-    logActivity(
+    logActivityFn(
       "career-agent-queue-sync",
       "google-sheet",
       `Career Agent queue sync received ${rows.length} rows and queued ${queued} new candidates`,
