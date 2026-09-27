@@ -65,6 +65,8 @@ export type NormalizedEmailJobAlertMessage = {
   subject: string;
   from: string;
   date: string;
+  /** Connector/provider receive timestamp. Prefer this over the email Date header for intake boundaries. */
+  receivedAt?: string;
   text?: string;
   html?: string;
 };
