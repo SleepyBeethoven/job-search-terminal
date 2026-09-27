@@ -49,6 +49,8 @@ function initialStages(): Record<StageName, StageState> {
   return { preparing: { status: "pending" }, writing: { status: "pending" }, checking: { status: "pending" }, saving: { status: "pending" } };
 }
 
+type TailorMode = "light" | "full";
+
 type Props = {
   jobId: string;
   /** How long the last draft for this job took and on what, for an honest expectation. */
@@ -56,13 +58,22 @@ type Props = {
   resumes: ResumeRecord[];
   recommendedResume: string;
   hasExistingDocument: boolean;
+  tailorMode?: TailorMode;
   resumeVersions: Record<string, {
     status: ResumeBuilderVersionStatus;
     sections: ResumeBuilderSection[];
   }>;
 };
 
-export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExistingDocument, resumeVersions, lastGeneration }: Props) {
+export function ResumeGeneratorModal({
+  jobId,
+  resumes,
+  recommendedResume,
+  hasExistingDocument,
+  resumeVersions,
+  lastGeneration,
+  tailorMode = "full",
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(() => {
@@ -189,6 +200,9 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
   const selectedApproved = selectedVersion?.status === "approved";
 
   function defaultModeFor(section: ResumeBuilderSection): ResumeSectionMode {
+    if (tailorMode === "light") {
+      return section.type === "summary" || section.type === "skills" ? "update" : "keep";
+    }
     if (sectionModes[section.id]) return sectionModes[section.id];
     if (section.type === "summary" || section.type === "impact" || section.type === "experience") return "update";
     return "keep";
@@ -204,7 +218,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
   return (
     <>
       <Button onClick={openModal} variant="secondary">
-        {hasExistingDocument ? "Regenerate resume" : "Generate tailored resume"}
+        {tailorMode === "light"
+          ? "Light Tailor"
+          : hasExistingDocument
+            ? "Full Tailor / Regenerate"
+            : "Full Tailor"}
       </Button>
 
       {open && (
@@ -217,7 +235,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
           <div ref={dialogRef} className="w-full max-w-md rounded-2xl bg-panel shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-6 pt-6 pb-4">
-              <h2 className="text-sm font-semibold text-ink">{status === "generating" ? "Generating tailored resume" : "Select base resume"}</h2>
+              <h2 className="text-sm font-semibold text-ink">
+                {status === "generating"
+                  ? tailorMode === "light" ? "Light tailoring resume" : "Generating tailored resume"
+                  : tailorMode === "light" ? "Light Tailor" : "Full Tailor"}
+              </h2>
               {status !== "generating" && (
                 <button
                   aria-label="Close"
@@ -287,8 +309,9 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
               ) : (
                 <>
                   <p className="mb-4 text-sm text-muted">
-                    Choose which of your uploaded resumes to use as the starting point. The
-                    recommended one is pre-selected based on the job evaluation.
+                    {tailorMode === "light"
+                      ? "Light Tailor updates only Summary and Skills. Experience and all other sections stay unchanged."
+                      : "Choose which resume to use as the starting point. Full Tailor can update the sections you approve below."}
                   </p>
 
                   <ul className="grid gap-2">
@@ -341,6 +364,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
 	                  )}
 
 	                  {selectedVersion && selectedApproved ? (
+                    tailorMode === "light" ? (
+                      <div className="mt-5 rounded-lg border border-border bg-surface p-3 text-xs text-muted">
+                        Summary and Skills will be AI-updated. Every other section will be kept exactly as-is.
+                      </div>
+                    ) : (
 	                    <div className="mt-5 rounded-lg border border-border bg-surface p-3">
 	                      <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Sections for this resume</p>
 	                      <div className="grid gap-2">
@@ -361,6 +389,7 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
 	                        ))}
 	                      </div>
 	                    </div>
+                    )
 	                  ) : selectedId ? (
 	                    <p className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-sm text-warning">
 	                      Review and approve this resume lane in Profile before generating from it.
@@ -389,7 +418,7 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
                   Cancel
                 </Button>
 	                <Button disabled={!selectedId || !selectedApproved} onClick={generate}>
-	                  Generate
+	                  {tailorMode === "light" ? "Run Light Tailor" : "Run Full Tailor"}
                 </Button>
               </div>
             )}
