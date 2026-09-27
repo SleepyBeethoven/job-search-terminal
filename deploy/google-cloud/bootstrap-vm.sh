@@ -6,6 +6,15 @@ APP_DIR="/opt/job-search-terminal"
 DATA_DIR="/var/lib/job-search-terminal"
 DEVICE="/dev/disk/by-id/google-jst-data"
 REPO_URL="https://github.com/SleepyBeethoven/job-search-terminal.git"
+METADATA_BASE="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
+
+metadata_value() {
+  curl -fsS -H "Metadata-Flavor: Google" "${METADATA_BASE}/$1" 2>/dev/null || true
+}
+
+CAREER_INTAKE_SPREADSHEET_ID="$(metadata_value career-intake-spreadsheet-id)"
+CAREER_INTAKE_SHEET_NAME="$(metadata_value career-intake-sheet-name)"
+CAREER_INTAKE_SHEET_NAME="${CAREER_INTAKE_SHEET_NAME:-Intake}"
 
 timedatectl set-timezone Asia/Shanghai
 
@@ -59,8 +68,6 @@ if [[ ! -d "${APP_DIR}/.git" ]]; then
   BEFORE=""
 else
   BEFORE="$(git -C "${APP_DIR}" rev-parse HEAD)"
-  # Runtime directories are symlinked onto the persistent data disk. Remove the
-  # links before git reset restores the tracked .gitkeep directories.
   for runtime_dir in data output assets; do
     [[ -L "${APP_DIR}/${runtime_dir}" ]] && rm "${APP_DIR}/${runtime_dir}"
   done
@@ -70,7 +77,6 @@ git -C "${APP_DIR}" fetch origin main
 git -C "${APP_DIR}" reset --hard origin/main
 AFTER="$(git -C "${APP_DIR}" rev-parse HEAD)"
 
-# Keep every mutable/runtime file on the separate persistent data disk.
 for runtime_dir in data output assets; do
   rm -rf "${APP_DIR}/${runtime_dir}"
   mkdir -p "${DATA_DIR}/${runtime_dir}"
@@ -83,14 +89,14 @@ if [[ "${BEFORE}" != "${AFTER}" || ! -f "${APP_DIR}/.next/BUILD_ID" ]]; then
   NEXT_TELEMETRY_DISABLED=1 npm run build
 fi
 
-# Next.js writes runtime caches and JST writes generated artifacts through the
-# symlinked runtime directories, so the service account needs ownership.
 chown -R jst:jst "${APP_DIR}" "${DATA_DIR}"
 
 cat >/etc/job-search-terminal.env <<EOF
 NODE_ENV=production
 NEXT_TELEMETRY_DISABLED=1
 JST_DATABASE_PATH=${DATA_DIR}/job-search-terminal.sqlite
+CAREER_INTAKE_SPREADSHEET_ID=${CAREER_INTAKE_SPREADSHEET_ID}
+CAREER_INTAKE_SHEET_NAME=${CAREER_INTAKE_SHEET_NAME}
 EOF
 chmod 600 /etc/job-search-terminal.env
 
@@ -168,12 +174,43 @@ Unit=job-search-terminal-vacuum.service
 WantedBy=timers.target
 EOF
 
+cat >/etc/systemd/system/job-search-terminal-intake.service <<'EOF'
+[Unit]
+Description=Sync Terry OS Google Sheet intake queue into JST
+After=network-online.target job-search-terminal.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=jst
+Group=jst
+WorkingDirectory=/opt/job-search-terminal
+EnvironmentFile=/etc/job-search-terminal.env
+ExecStart=/usr/bin/npm run intake:sync
+EOF
+
+cat >/etc/systemd/system/job-search-terminal-intake.timer <<'EOF'
+[Unit]
+Description=Sync Career Agent intake after twice-daily mail scans
+
+[Timer]
+OnCalendar=*-*-* 05:10:00
+OnCalendar=*-*-* 17:10:00
+Persistent=true
+Unit=job-search-terminal-intake.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
 systemctl daemon-reload
 systemctl enable --now job-search-terminal.service
 systemctl enable --now job-search-terminal-retention.timer
 systemctl enable --now job-search-terminal-vacuum.timer
+systemctl enable --now job-search-terminal-intake.timer
 
 echo "Job Search Terminal is running on 127.0.0.1:3000."
 echo "Database: ${DATA_DIR}/job-search-terminal.sqlite"
+echo "Intake Sheet ID: ${CAREER_INTAKE_SPREADSHEET_ID:-not-configured}"
 systemctl --no-pager --full status job-search-terminal.service || true
 systemctl --no-pager list-timers 'job-search-terminal-*' || true
