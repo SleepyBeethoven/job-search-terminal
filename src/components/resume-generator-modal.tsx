@@ -19,6 +19,16 @@ type StreamEvent =
   | { type: "complete"; documentId: string; notice?: string }
   | { type: "error"; error: string; code?: string };
 
+type BudgetPreflight = {
+  lowTokens: number;
+  highTokens: number;
+  budgetTokens: number;
+  status: "within_budget" | "near_budget" | "over_budget";
+  unitCount: number;
+  tailorMode: TailorMode;
+  note: string;
+};
+
 const STAGE_ORDER: StageName[] = ["preparing", "writing", "checking", "saving"];
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -83,6 +93,9 @@ export function ResumeGeneratorModal({
   const [status, setStatus] = useState<"idle" | "generating" | "error">("idle");
   const [error, setError] = useState("");
   const [sectionModes, setSectionModes] = useState<Record<string, ResumeSectionMode>>({});
+  const [budgetPreflight, setBudgetPreflight] = useState<BudgetPreflight | null>(null);
+  const [budgetApproved, setBudgetApproved] = useState(false);
+  const [preflightChecking, setPreflightChecking] = useState(false);
   const [stages, setStages] = useState<Record<StageName, StageState>>(initialStages);
   const [notice, setNotice] = useState("");
   const [startedAt, setStartedAt] = useState(0);
@@ -106,6 +119,9 @@ export function ResumeGeneratorModal({
     setSelectedId(rec?.id ?? resumes[0]?.id ?? "");
     setStatus("idle");
     setError("");
+    setBudgetPreflight(null);
+    setBudgetApproved(false);
+    setPreflightChecking(false);
     setOpen(true);
   }
 
@@ -129,8 +145,40 @@ export function ResumeGeneratorModal({
     if (event.notice) setNotice(event.notice);
   }
 
-  async function generate() {
+  async function generate(approveOverBudget = false) {
     if (!selectedId) return;
+
+    setPreflightChecking(true);
+    setError("");
+    try {
+      const preflightResponse = await fetch("/api/resume/preflight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          resumeId: selectedId,
+          sectionModes: buildSectionModes(),
+          tailorMode,
+        }),
+      });
+      const preflightData = (await preflightResponse.json().catch(() => ({}))) as BudgetPreflight & { error?: string };
+      if (!preflightResponse.ok) {
+        throw new Error(preflightData.error ?? "Token preflight failed");
+      }
+      setBudgetPreflight(preflightData);
+      if (preflightData.status === "over_budget" && !approveOverBudget) {
+        setBudgetApproved(false);
+        return;
+      }
+      if (preflightData.status === "over_budget") setBudgetApproved(true);
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : String(err));
+      return;
+    } finally {
+      setPreflightChecking(false);
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setStatus("generating");
@@ -204,7 +252,7 @@ export function ResumeGeneratorModal({
       return section.type === "summary" || section.type === "skills" ? "update" : "keep";
     }
     if (sectionModes[section.id]) return sectionModes[section.id];
-    if (section.type === "summary" || section.type === "impact" || section.type === "experience") return "update";
+    if (section.type === "summary" || section.type === "impact" || section.type === "experience" || section.type === "skills") return "update";
     return "keep";
   }
 
@@ -378,7 +426,11 @@ export function ResumeGeneratorModal({
 	                            <select
 	                              className="rounded-control border border-border bg-panel px-2 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent"
 	                              disabled={section.type === "header"}
-	                              onChange={(event) => setSectionModes((prev) => ({ ...prev, [section.id]: event.target.value as ResumeSectionMode }))}
+	                              onChange={(event) => {
+                                  setSectionModes((prev) => ({ ...prev, [section.id]: event.target.value as ResumeSectionMode }));
+                                  setBudgetPreflight(null);
+                                  setBudgetApproved(false);
+                                }}
 	                              value={section.type === "header" ? "keep" : defaultModeFor(section)}
 	                            >
 	                              <option value="keep">Keep</option>
@@ -396,7 +448,18 @@ export function ResumeGeneratorModal({
 	                    </p>
 	                  ) : null}
 
-	                  {status === "error" && (
+	                  {budgetPreflight?.status === "over_budget" && !budgetApproved ? (
+                    <div className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-sm text-ink">
+                      <p className="font-medium text-warning">Budget approval required</p>
+                      <p className="mt-1 text-xs text-muted">
+                        Estimated AI request volume: {budgetPreflight.lowTokens.toLocaleString()}–{budgetPreflight.highTokens.toLocaleString()} tokens
+                        {" "}against a {budgetPreflight.budgetTokens.toLocaleString()} token ceiling.
+                      </p>
+                      <p className="mt-1 text-xs text-muted">{budgetPreflight.note}</p>
+                    </div>
+                  ) : null}
+
+                  {status === "error" && (
                     <p className="mt-3 text-sm text-danger">{error}</p>
                   )}
                 </>
@@ -417,8 +480,15 @@ export function ResumeGeneratorModal({
                 <Button onClick={() => setOpen(false)} variant="quiet">
                   Cancel
                 </Button>
-	                <Button disabled={!selectedId || !selectedApproved} onClick={generate}>
-	                  {tailorMode === "light" ? "Run Light Tailor" : "Run Full Tailor"}
+	                <Button
+                    disabled={!selectedId || !selectedApproved || preflightChecking}
+                    onClick={() => generate(budgetPreflight?.status === "over_budget")}
+                  >
+	                  {preflightChecking
+                      ? "Checking budget…"
+                      : budgetPreflight?.status === "over_budget" && !budgetApproved
+                        ? "Approve & Run"
+                        : tailorMode === "light" ? "Run Light Tailor" : "Run Full Tailor"}
                 </Button>
               </div>
             )}
