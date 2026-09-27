@@ -18,8 +18,8 @@ const MAX_JOBS_PER_EMAIL = 50;
 const MIN_DESCRIPTION_LENGTH = 100;
 const GENERIC_LINK_RE = /(unsubscribe|preferences|settings|privacy|terms|login|signin|sign-in|account|notification|view.?email|manage.?alert|tracking|pixel)/i;
 const NON_JOB_TITLE_RE = /\b(job alert|jobs?\s+(?:since|for|matching|near|in|from|you may like)|saved search|recommended jobs?|new jobs?)\b/i;
-const ROLE_RE = /\b(ux|ui|user experience|product|design|designer|director|head|lead|principal|staff|senior|manager|research|scientist|engineer|architect|strategy|strategic|operations|program)\b/i;
-const LOCATION_RE = /\b(remote|united states|usa|u\.s\.|nashville|new york|san francisco|austin|chicago|seattle|boston|los angeles|denver|atlanta|dallas|tn|ca|ny|tx|il|wa|ma|co|ga)\b/i;
+const ROLE_RE = /\b(ai|artificial intelligence|evaluator|evaluation|reviewer|quality|qa|annotation|trainer|training|onboarding|crm|customer|client|lifecycle|engagement|salesforce|project|program|coordinator|operations|implementation|process|bilingual|mandarin|china market|growth|marketing|sales|account|ux|ui|user experience|product|design|designer|director|head|lead|principal|staff|senior|manager|research|scientist|engineer|architect|strategy|strategic)\b/i;
+const LOCATION_RE = /\b(remote|hybrid|on-site|onsite|australia|sydney|melbourne|brisbane|perth|adelaide|china|shanghai|beijing|hangzhou|shenzhen|guangzhou|hong kong|singapore|japan|tokyo|apac|united states|usa|u\.s\.|nashville|new york|san francisco|austin|chicago|seattle|boston|los angeles|denver|atlanta|dallas|tn|ca|ny|tx|il|wa|ma|co|ga)\b/i;
 
 export type ParsedEmailJobCandidate = {
   id: string;
@@ -59,6 +59,16 @@ type EmailParts = {
   html: string;
 };
 
+export type NormalizedEmailJobAlertMessage = {
+  provider: "gmail" | "outlook" | "other";
+  messageId: string;
+  subject: string;
+  from: string;
+  date: string;
+  text?: string;
+  html?: string;
+};
+
 export function getEmailJobAlertImportDirectory(): string {
   return EMAIL_IMPORT_DIR;
 }
@@ -73,34 +83,50 @@ export function ensureEmailJobAlertImportDirectory(): void {
 
 export async function importEmailJobAlertFile(filePath: string): Promise<{ pending: number; skipped: number }> {
   const titleFilters = getTitleFilters();
-  const profile = getUserProfile();
   const parsed = parseEmailJobAlertFile(filePath, titleFilters.negative);
   const filename = path.basename(filePath);
+  const result = queueParsedEmailJobAlert(parsed, filename, titleFilters.positive);
+
+  archiveEmailSourceFile(filePath);
+  return result;
+}
+
+export function importEmailJobAlertMessage(message: NormalizedEmailJobAlertMessage): { pending: number; skipped: number } {
+  const titleFilters = getTitleFilters();
+  const parsed = parseEmailJobAlertMessage(message, titleFilters.negative);
+  const sourceName = connectorSourceName(message);
+  return queueParsedEmailJobAlert(parsed, sourceName, titleFilters.positive);
+}
+
+function queueParsedEmailJobAlert(
+  parsed: ParsedEmailJobAlert,
+  sourceName: string,
+  positiveTitleFilters: string[]
+): { pending: number; skipped: number } {
+  const profile = getUserProfile();
 
   if (parsed.candidates.length === 0) {
-    archiveEmailSourceFile(filePath);
-    logActivity("email-job-alert-import", filename, "Email job alert had no importable candidates after filters", {
+    logActivity("email-job-alert-import", sourceName, "Email job alert had no importable candidates after filters", {
       skippedByNegativeFilter: parsed.skippedByNegativeFilter,
       subject: parsed.metadata.subject,
     });
     return { pending: 0, skipped: parsed.skippedByNegativeFilter };
   }
 
-  const batchId = `email-batch-${createHash("sha1").update(`${filename}:${parsed.metadata.date}`).digest("hex").slice(0, 16)}`;
+  const batchId = `email-batch-${createHash("sha1").update(`${sourceName}:${parsed.metadata.date}`).digest("hex").slice(0, 16)}`;
   const pendingCandidates: PendingEmailJobCandidateInput[] = parsed.candidates.map((candidate) => ({
     ...candidate,
     batchId,
     emailSubject: parsed.metadata.subject,
     emailFrom: parsed.metadata.from,
     emailDate: parsed.metadata.date,
-    sourceFilename: filename,
+    sourceFilename: sourceName,
     jobDescription: candidate.jobDescription,
-    titleMatch: scoreTitleMatch(candidate.position, profile.targetRoles, titleFilters.positive),
+    titleMatch: scoreTitleMatch(candidate.position, profile.targetRoles, positiveTitleFilters),
   }));
 
   savePendingEmailCandidates(pendingCandidates);
-  archiveEmailSourceFile(filePath);
-  logActivity("email-job-alert-import", filename, `Queued ${pendingCandidates.length} candidates for approval`, {
+  logActivity("email-job-alert-import", sourceName, `Queued ${pendingCandidates.length} candidates for approval`, {
     skippedByNegativeFilter: parsed.skippedByNegativeFilter,
     subject: parsed.metadata.subject,
     batchId,
@@ -214,6 +240,25 @@ function writeApprovedCandidatesJson(candidates: PendingEmailJobCandidate[]): st
   return finalPath;
 }
 
+export function parseEmailJobAlertMessage(
+  message: NormalizedEmailJobAlertMessage,
+  negativeTitleFilters: string[] = []
+): ParsedEmailJobAlert {
+  const parts: EmailParts = {
+    subject: message.subject,
+    from: message.from,
+    date: message.date,
+    text: message.text ?? "",
+    html: message.html ?? "",
+  };
+  return parseEmailParts(parts, connectorSourceName(message), negativeTitleFilters);
+}
+
+function connectorSourceName(message: NormalizedEmailJobAlertMessage): string {
+  const id = createHash("sha1").update(`${message.provider}:${message.messageId}`).digest("hex").slice(0, 16);
+  return `connector-${message.provider}-${id}.message`;
+}
+
 export function parseEmailJobAlertFile(filePath: string, negativeTitleFilters: string[] = []): ParsedEmailJobAlert {
   const raw = readFileSync(filePath, "utf-8");
   const ext = path.extname(filePath).toLowerCase();
@@ -228,6 +273,14 @@ export function parseEmailJobAlertFile(filePath: string, negativeTitleFilters: s
         html: ext === ".html" || /<html|<body|<a\s/i.test(raw) ? raw : "",
       };
 
+  return parseEmailParts(parts, path.basename(filePath), negativeTitleFilters);
+}
+
+function parseEmailParts(
+  parts: EmailParts,
+  sourceFilename: string,
+  negativeTitleFilters: string[]
+): ParsedEmailJobAlert {
   const bodyText = normalizeText(parts.text || htmlToText(parts.html));
   const htmlLinks = extractHtmlLinks(parts.html);
   const textLinks = extractUrls(bodyText);
@@ -245,7 +298,7 @@ export function parseEmailJobAlertFile(filePath: string, negativeTitleFilters: s
       subject: decodeMimeWords(parts.subject),
       from: parts.from,
       date: parts.date,
-      sourceFilename: path.basename(filePath),
+      sourceFilename,
     },
     candidates,
     skippedByNegativeFilter: candidatesSkippedByNegativeFilter(lines, negativeTitleFilters),
@@ -296,7 +349,8 @@ function extractCandidates(input: {
     if (usedKeys.has(key)) return;
     usedKeys.add(key);
 
-    const directLink = raw.link && isActualJobPostingUrl(raw.link) ? raw.link : linkQueue.find(isActualJobPostingUrl) ?? "";
+    const rawDirectLink = raw.link && isActualJobPostingUrl(raw.link) ? raw.link : linkQueue.find(isActualJobPostingUrl) ?? "";
+    const directLink = rawDirectLink ? canonicalizeJobPostingUrl(rawDirectLink) : "";
     if (directLink) {
       const index = linkQueue.indexOf(directLink);
       if (index >= 0) linkQueue.splice(index, 1);
@@ -642,6 +696,37 @@ function matchesNegativeFilter(title: string, filters: string[]): boolean {
 function candidatesSkippedByNegativeFilter(lines: string[], filters: string[]): number {
   if (filters.length === 0) return 0;
   return lines.filter((line) => ROLE_RE.test(line) && matchesNegativeFilter(line, filters)).length;
+}
+
+export function canonicalizeJobPostingUrl(rawUrl: string): string {
+  try {
+    const unwrapped = unwrapRedirectUrl(rawUrl);
+    const url = new URL(unwrapped);
+    const host = url.hostname.toLowerCase().replace(/^au\./, "www.").replace(/^cn\./, "www.");
+
+    if (host.endsWith("linkedin.com")) {
+      const match = url.pathname.match(/\/jobs\/view\/(\d+)/i);
+      if (match) return `https://www.linkedin.com/jobs/view/${match[1]}`;
+    }
+
+    const kept = new URLSearchParams();
+    if (host.includes("indeed.")) {
+      const jobKey = url.searchParams.get("jk") ?? url.searchParams.get("vjk");
+      if (jobKey) kept.set("jk", jobKey);
+    } else {
+      for (const [key, value] of url.searchParams.entries()) {
+        if (/^(utm_|trk|tracking|trackingid|refid|lipi|midtoken|midsig|eid|otptoken|mc_|source|campaign)/i.test(key)) continue;
+        kept.append(key, value);
+      }
+    }
+
+    url.hostname = host;
+    url.hash = "";
+    url.search = kept.toString();
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return rawUrl;
+  }
 }
 
 function stableEmailJobId(sourceUrl: string): string {
