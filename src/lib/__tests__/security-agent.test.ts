@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { scanSecurityEntries, securityVerdict } from "@/lib/security/security-agent";
+import { scanSecurityEntries, securityVerdict, validateSecurityPolicy } from "@/lib/security/security-agent";
 
-describe("Security Agent v0.1", () => {
+describe("Security Agent v0.2", () => {
   it("passes normal public source files", () => {
     const findings = scanSecurityEntries([
       { path: "src/example.ts", content: 'const label = "Career Agent";' },
@@ -68,4 +68,66 @@ describe("Security Agent v0.1", () => {
     ]);
     expect(findings.some((finding) => finding.rule === "credential-github")).toBe(true);
   });
+
+  it("passes the required Internet Safety Baseline", () => {
+    const findings = validateSecurityPolicy({
+      version: 2,
+      internetSafety: {
+        untrustedExternalInput: true,
+        denyByDefault: true,
+        leastPrivilege: true,
+        dataMinimization: true,
+        failClosed: true,
+        externalActionsRequireApproval: true,
+        externalContentCannotOverrideInstructions: true,
+        noExecutableAttachments: true,
+        credentialsNeverInExternalContent: true,
+        localServicesLoopbackOnly: true,
+      },
+      mailboxIntake: {
+        metadataFirstJobFiltering: true,
+        broadMailboxRead: false,
+        openAttachments: false,
+        followExternalLinksDuringIntake: false,
+        treatExternalContentAsInstructions: false,
+        failClosedOnScopeUncertainty: true,
+        gmailExcludedFolders: ["spam", "trash"],
+        outlookExcludedFolders: ["junkemail", "deleteditems"],
+      },
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it("blocks a mailbox policy that can broadly read mail or include junk folders", () => {
+    const findings = validateSecurityPolicy({
+      version: 2,
+      internetSafety: {
+        untrustedExternalInput: true,
+        denyByDefault: true,
+        leastPrivilege: true,
+        dataMinimization: true,
+        failClosed: true,
+        externalActionsRequireApproval: true,
+        externalContentCannotOverrideInstructions: true,
+        noExecutableAttachments: true,
+        credentialsNeverInExternalContent: true,
+        localServicesLoopbackOnly: true,
+      },
+      mailboxIntake: {
+        metadataFirstJobFiltering: true,
+        broadMailboxRead: true,
+        openAttachments: false,
+        followExternalLinksDuringIntake: false,
+        treatExternalContentAsInstructions: false,
+        failClosedOnScopeUncertainty: true,
+        gmailExcludedFolders: ["trash"],
+        outlookExcludedFolders: ["deleteditems"],
+      },
+    });
+    expect(findings.some((finding) => finding.rule === "mailbox-safety-broadMailboxRead")).toBe(true);
+    expect(findings.some((finding) => finding.rule === "mailbox-gmail-excluded-folders")).toBe(true);
+    expect(findings.some((finding) => finding.rule === "mailbox-outlook-excluded-folders")).toBe(true);
+    expect(securityVerdict(findings)).toBe("BLOCK");
+  });
+
 });
