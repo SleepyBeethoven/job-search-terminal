@@ -17,6 +17,14 @@ describe("Career Agent email intake safety contract", () => {
     expect(effectiveEmailIntakeLowerBound(null)).toBe("2026-09-27T11:07:00+08:00");
   });
 
+  it("blocks connector intake when the current provider watermark is missing", () => {
+    expect(checkEmailIntakeBoundary({
+      receivedAt: "2026-09-27T09:30:01Z",
+      lastSuccessfulScanAt: null,
+      requireWatermark: true,
+    })).toMatchObject({ allowed: false, reason: "missing-watermark" });
+  });
+
   it("rejects every historical message at or before the hard cutoff regardless of unread state", () => {
     expect(checkEmailIntakeBoundary({
       receivedAt: "2026-09-27T03:06:59Z",
