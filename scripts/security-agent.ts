@@ -31,10 +31,10 @@ if (findings.length === 0) {
   console.log("- no obvious personal mailbox addresses");
   console.log("- no private Google Sheet identifier in public code");
   console.log("- no common hard-coded credential pattern detected");
-  console.log("- Internet Safety Baseline v2 is enabled
-- mailbox intake is metadata-first and excludes junk/deleted folders
-- external content cannot override agent instructions
-- GitHub public-repo secret scanning remains a second layer");
+  console.log("- Internet Safety Baseline v2 is enabled");
+  console.log("- mailbox intake is metadata-first and excludes junk/deleted folders");
+  console.log("- external content cannot override agent instructions");
+  console.log("- GitHub public-repo secret scanning remains a second layer");
   process.exit(0);
 }
 
