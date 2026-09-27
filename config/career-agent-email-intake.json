@@ -40,7 +40,20 @@
       "incremental-window-only",
       "failure-does-not-advance-watermark",
       "no-historical-backfill",
-      "no-expensive-downstream-work"
+      "no-expensive-downstream-work",
+      "bridge-env-opt-in",
+      "bridge-shared-secret",
+      "bridge-ack-after-local-write",
+      "bridge-zero-cost"
     ]
+  },
+  "bridge": {
+    "transport": "google-apps-script-web-app",
+    "auth": "shared-secret-post-body",
+    "enabledByEnvironment": true,
+    "autoSyncTarget": "pending-review",
+    "pollIntervalMinutes": 5,
+    "ackOnlyAfterLocalQueueWrite": true,
+    "zeroCostRequired": true
   }
 }
