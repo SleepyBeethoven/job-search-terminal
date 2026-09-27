@@ -1543,6 +1543,7 @@ export const migrations = [
       -- history while allowing heavy job-specific data to be removed.
       alter table jobs add column retention_pinned integer not null default 0;
       alter table jobs add column retention_compacted_at text not null default '';
+      alter table jobs add column retention_last_activity_at text not null default '';
       alter table jobs add column retention_reason text not null default '';
 
       create index if not exists idx_jobs_retention_compacted
