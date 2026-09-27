@@ -10,6 +10,16 @@ function initializeCareerAgentBridge() {
     secret = [Utilities.getUuid(), Utilities.getUuid(), Utilities.getUuid()].join("");
     props.setProperty(CAREER_AGENT_SECRET_PROPERTY, secret);
   }
+  const triggerExists = ScriptApp.getProjectTriggers()
+    .some(function(trigger) { return trigger.getHandlerFunction() === "cleanupCareerAgentQueue"; });
+  if (!triggerExists) {
+    ScriptApp.newTrigger("cleanupCareerAgentQueue")
+      .timeBased()
+      .atHour(4)
+      .everyDays(1)
+      .create();
+  }
+
   console.log("CAREER_AGENT_BRIDGE_SECRET=" + secret);
   return secret;
 }
@@ -101,6 +111,27 @@ function careerAgentAck_(queueIds, processedAt) {
   }
 
   return careerAgentJson_({ ok: true, acknowledged: acknowledged });
+}
+
+
+function cleanupCareerAgentQueue() {
+  const sheet = SpreadsheetApp.openById(CAREER_AGENT_SPREADSHEET_ID).getSheetByName(CAREER_AGENT_INTAKE_SHEET);
+  if (!sheet) return;
+
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length < 2) return;
+
+  const headers = values[0].map(String);
+  const scannedAtCol = headers.indexOf("scanned_at");
+  if (scannedAtCol < 0) return;
+
+  const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  for (let i = values.length - 1; i >= 1; i -= 1) {
+    const scannedMs = Date.parse(String(values[i][scannedAtCol] || ""));
+    if (Number.isFinite(scannedMs) && scannedMs < cutoffMs) {
+      sheet.deleteRow(i + 1);
+    }
+  }
 }
 
 function careerAgentJson_(payload) {
