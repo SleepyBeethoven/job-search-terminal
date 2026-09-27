@@ -30,6 +30,8 @@ type Props = {
   resumeVersions: Record<string, { status: ResumeBuilderVersionStatus; sections: ResumeBuilderSection[] }>;
   resumes: ResumeRecord[];
   setResumeBaseAction: (formData: FormData) => Promise<void>;
+  useTemplateAction: (formData: FormData) => Promise<void>;
+  skipJobAction: (formData: FormData) => Promise<void>;
 };
 
 export function ResumeTab({
@@ -43,6 +45,8 @@ export function ResumeTab({
   resumeVersions,
   resumes,
   setResumeBaseAction,
+  useTemplateAction,
+  skipJobAction,
 }: Props) {
   const needsRefresh = Boolean(evaluation && evaluationNeedsRefresh(evaluation, job));
   return (
@@ -112,6 +116,15 @@ export function ResumeTab({
               </CardDescription>
             </CardHeader>
             <div className="flex flex-wrap gap-2">
+              <form action={useTemplateAction}>
+                <input name="resumeName" type="hidden" value={resolvedRecommendedResume} />
+                <SubmitButton
+                  label="Use Template"
+                  pendingLabel="Selecting…"
+                  savedLabel="Selected"
+                  variant="secondary"
+                />
+              </form>
               <ResumeGeneratorModal
                 hasExistingDocument={!!generatedDocument}
                 lastGeneration={generatedDocument?.generationMs ? { ms: generatedDocument.generationMs, provider: generatedDocument.providerUsed } : undefined}
@@ -119,7 +132,25 @@ export function ResumeTab({
                 recommendedResume={resolvedRecommendedResume}
                 resumeVersions={resumeVersions}
                 resumes={resumes}
+                tailorMode="light"
               />
+              <ResumeGeneratorModal
+                hasExistingDocument={!!generatedDocument}
+                lastGeneration={generatedDocument?.generationMs ? { ms: generatedDocument.generationMs, provider: generatedDocument.providerUsed } : undefined}
+                jobId={id}
+                recommendedResume={resolvedRecommendedResume}
+                resumeVersions={resumeVersions}
+                resumes={resumes}
+                tailorMode="full"
+              />
+              <form action={skipJobAction}>
+                <SubmitButton
+                  label="Skip"
+                  pendingLabel="Skipping…"
+                  savedLabel="Skipped"
+                  variant="quiet"
+                />
+              </form>
               {hasDraft && generatedDocument && (
                 <LinkButton href={`/generated-documents/${generatedDocument.id}/edit`} variant="secondary">
                   Edit draft

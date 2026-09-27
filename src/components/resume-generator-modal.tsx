@@ -19,6 +19,16 @@ type StreamEvent =
   | { type: "complete"; documentId: string; notice?: string }
   | { type: "error"; error: string; code?: string };
 
+type BudgetPreflight = {
+  lowTokens: number;
+  highTokens: number;
+  budgetTokens: number;
+  status: "within_budget" | "near_budget" | "over_budget";
+  unitCount: number;
+  tailorMode: TailorMode;
+  note: string;
+};
+
 const STAGE_ORDER: StageName[] = ["preparing", "writing", "checking", "saving"];
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -49,6 +59,8 @@ function initialStages(): Record<StageName, StageState> {
   return { preparing: { status: "pending" }, writing: { status: "pending" }, checking: { status: "pending" }, saving: { status: "pending" } };
 }
 
+type TailorMode = "light" | "full";
+
 type Props = {
   jobId: string;
   /** How long the last draft for this job took and on what, for an honest expectation. */
@@ -56,13 +68,22 @@ type Props = {
   resumes: ResumeRecord[];
   recommendedResume: string;
   hasExistingDocument: boolean;
+  tailorMode?: TailorMode;
   resumeVersions: Record<string, {
     status: ResumeBuilderVersionStatus;
     sections: ResumeBuilderSection[];
   }>;
 };
 
-export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExistingDocument, resumeVersions, lastGeneration }: Props) {
+export function ResumeGeneratorModal({
+  jobId,
+  resumes,
+  recommendedResume,
+  hasExistingDocument,
+  resumeVersions,
+  lastGeneration,
+  tailorMode = "full",
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(() => {
@@ -72,6 +93,9 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
   const [status, setStatus] = useState<"idle" | "generating" | "error">("idle");
   const [error, setError] = useState("");
   const [sectionModes, setSectionModes] = useState<Record<string, ResumeSectionMode>>({});
+  const [budgetPreflight, setBudgetPreflight] = useState<BudgetPreflight | null>(null);
+  const [budgetApproved, setBudgetApproved] = useState(false);
+  const [preflightChecking, setPreflightChecking] = useState(false);
   const [stages, setStages] = useState<Record<StageName, StageState>>(initialStages);
   const [notice, setNotice] = useState("");
   const [startedAt, setStartedAt] = useState(0);
@@ -95,6 +119,9 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
     setSelectedId(rec?.id ?? resumes[0]?.id ?? "");
     setStatus("idle");
     setError("");
+    setBudgetPreflight(null);
+    setBudgetApproved(false);
+    setPreflightChecking(false);
     setOpen(true);
   }
 
@@ -118,8 +145,40 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
     if (event.notice) setNotice(event.notice);
   }
 
-  async function generate() {
+  async function generate(approveOverBudget = false) {
     if (!selectedId) return;
+
+    setPreflightChecking(true);
+    setError("");
+    try {
+      const preflightResponse = await fetch("/api/resume/preflight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          resumeId: selectedId,
+          sectionModes: buildSectionModes(),
+          tailorMode,
+        }),
+      });
+      const preflightData = (await preflightResponse.json().catch(() => ({}))) as BudgetPreflight & { error?: string };
+      if (!preflightResponse.ok) {
+        throw new Error(preflightData.error ?? "Token preflight failed");
+      }
+      setBudgetPreflight(preflightData);
+      if (preflightData.status === "over_budget" && !approveOverBudget) {
+        setBudgetApproved(false);
+        return;
+      }
+      if (preflightData.status === "over_budget") setBudgetApproved(true);
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : String(err));
+      return;
+    } finally {
+      setPreflightChecking(false);
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setStatus("generating");
@@ -189,8 +248,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
   const selectedApproved = selectedVersion?.status === "approved";
 
   function defaultModeFor(section: ResumeBuilderSection): ResumeSectionMode {
+    if (tailorMode === "light") {
+      return section.type === "summary" || section.type === "skills" ? "update" : "keep";
+    }
     if (sectionModes[section.id]) return sectionModes[section.id];
-    if (section.type === "summary" || section.type === "impact" || section.type === "experience") return "update";
+    if (section.type === "summary" || section.type === "impact" || section.type === "experience" || section.type === "skills") return "update";
     return "keep";
   }
 
@@ -204,7 +266,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
   return (
     <>
       <Button onClick={openModal} variant="secondary">
-        {hasExistingDocument ? "Regenerate resume" : "Generate tailored resume"}
+        {tailorMode === "light"
+          ? "Light Tailor"
+          : hasExistingDocument
+            ? "Full Tailor / Regenerate"
+            : "Full Tailor"}
       </Button>
 
       {open && (
@@ -217,7 +283,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
           <div ref={dialogRef} className="w-full max-w-md rounded-2xl bg-panel shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-6 pt-6 pb-4">
-              <h2 className="text-sm font-semibold text-ink">{status === "generating" ? "Generating tailored resume" : "Select base resume"}</h2>
+              <h2 className="text-sm font-semibold text-ink">
+                {status === "generating"
+                  ? tailorMode === "light" ? "Light tailoring resume" : "Generating tailored resume"
+                  : tailorMode === "light" ? "Light Tailor" : "Full Tailor"}
+              </h2>
               {status !== "generating" && (
                 <button
                   aria-label="Close"
@@ -287,8 +357,9 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
               ) : (
                 <>
                   <p className="mb-4 text-sm text-muted">
-                    Choose which of your uploaded resumes to use as the starting point. The
-                    recommended one is pre-selected based on the job evaluation.
+                    {tailorMode === "light"
+                      ? "Light Tailor updates only Summary and Skills. Experience and all other sections stay unchanged."
+                      : "Choose which resume to use as the starting point. Full Tailor can update the sections you approve below."}
                   </p>
 
                   <ul className="grid gap-2">
@@ -341,6 +412,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
 	                  )}
 
 	                  {selectedVersion && selectedApproved ? (
+                    tailorMode === "light" ? (
+                      <div className="mt-5 rounded-lg border border-border bg-surface p-3 text-xs text-muted">
+                        Summary and Skills will be AI-updated. Every other section will be kept exactly as-is.
+                      </div>
+                    ) : (
 	                    <div className="mt-5 rounded-lg border border-border bg-surface p-3">
 	                      <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Sections for this resume</p>
 	                      <div className="grid gap-2">
@@ -350,7 +426,11 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
 	                            <select
 	                              className="rounded-control border border-border bg-panel px-2 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent"
 	                              disabled={section.type === "header"}
-	                              onChange={(event) => setSectionModes((prev) => ({ ...prev, [section.id]: event.target.value as ResumeSectionMode }))}
+	                              onChange={(event) => {
+                                  setSectionModes((prev) => ({ ...prev, [section.id]: event.target.value as ResumeSectionMode }));
+                                  setBudgetPreflight(null);
+                                  setBudgetApproved(false);
+                                }}
 	                              value={section.type === "header" ? "keep" : defaultModeFor(section)}
 	                            >
 	                              <option value="keep">Keep</option>
@@ -361,13 +441,25 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
 	                        ))}
 	                      </div>
 	                    </div>
+                    )
 	                  ) : selectedId ? (
 	                    <p className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-sm text-warning">
 	                      Review and approve this resume lane in Profile before generating from it.
 	                    </p>
 	                  ) : null}
 
-	                  {status === "error" && (
+	                  {budgetPreflight?.status === "over_budget" && !budgetApproved ? (
+                    <div className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-sm text-ink">
+                      <p className="font-medium text-warning">Budget approval required</p>
+                      <p className="mt-1 text-xs text-muted">
+                        Estimated AI request volume: {budgetPreflight.lowTokens.toLocaleString()}–{budgetPreflight.highTokens.toLocaleString()} tokens
+                        {" "}against a {budgetPreflight.budgetTokens.toLocaleString()} token ceiling.
+                      </p>
+                      <p className="mt-1 text-xs text-muted">{budgetPreflight.note}</p>
+                    </div>
+                  ) : null}
+
+                  {status === "error" && (
                     <p className="mt-3 text-sm text-danger">{error}</p>
                   )}
                 </>
@@ -388,8 +480,15 @@ export function ResumeGeneratorModal({ jobId, resumes, recommendedResume, hasExi
                 <Button onClick={() => setOpen(false)} variant="quiet">
                   Cancel
                 </Button>
-	                <Button disabled={!selectedId || !selectedApproved} onClick={generate}>
-	                  Generate
+	                <Button
+                    disabled={!selectedId || !selectedApproved || preflightChecking}
+                    onClick={() => generate(budgetPreflight?.status === "over_budget")}
+                  >
+	                  {preflightChecking
+                      ? "Checking budget…"
+                      : budgetPreflight?.status === "over_budget" && !budgetApproved
+                        ? "Approve & Run"
+                        : tailorMode === "light" ? "Run Light Tailor" : "Run Full Tailor"}
                 </Button>
               </div>
             )}
