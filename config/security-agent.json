@@ -4,7 +4,11 @@
     "id": "security",
     "name": "Security",
     "type": "governance",
-    "outputs": ["PASS", "PASS WITH FIXES", "BLOCK"]
+    "outputs": [
+      "PASS",
+      "PASS WITH FIXES",
+      "BLOCK"
+    ]
   },
   "repository": {
     "assumePublic": true,
@@ -49,5 +53,22 @@
     "requireExplicitContract": true,
     "requireRetentionRule": true,
     "requireLeastData": true
+  },
+  "untrustedInputRule": {
+    "default": "deny",
+    "externalContentIsDataNotInstructions": true,
+    "promptInjectionCannotExpandAuthority": true,
+    "requireMetadataPreFilterWhenPractical": true,
+    "allowUnknownAttachments": false,
+    "allowExecutableExternalContent": false,
+    "allowSpamJunkTrashDeletedByDefault": false,
+    "failClosedOnAmbiguousTrust": true
+  },
+  "permissionRule": {
+    "leastPrivilege": true,
+    "requireExplicitScope": true,
+    "failClosedIfScopeCannotBeEnforced": true,
+    "requireHumanApprovalForIrreversibleExternalActions": true,
+    "localServicesBindLocalhostByDefault": true
   }
 }
