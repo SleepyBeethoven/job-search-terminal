@@ -15,11 +15,11 @@ computer.
 - systemd keeps JST running
 - daily retention cleanup at 04:45 Asia/Shanghai
 - weekly SQLite VACUUM Sunday at 04:50 Asia/Shanghai
+- private Google Sheet intake sync at 05:10 and 17:10 Asia/Shanghai
 
-The default zone is `us-west1-b`, which is in a Compute Engine Free Tier region. Google
-currently limits the Always Free e2-micro benefit to selected US regions and includes up
-to 30 GB-months of standard persistent disk. Network egress can still be billable,
-especially to destinations excluded from the free egress allowance.
+The default VM shape intentionally stays small. Check current Google Cloud pricing and
+Free Tier conditions before deployment because network egress and other usage can still be
+billable.
 
 ## One-time setup
 
@@ -34,11 +34,20 @@ repository checkout is required.
 git clone https://github.com/SleepyBeethoven/job-search-terminal.git
 cd job-search-terminal
 gcloud config set project YOUR_PROJECT_ID
-bash deploy/google-cloud/create-vm.sh
+CAREER_INTAKE_SPREADSHEET_ID=YOUR_PRIVATE_SHEET_ID bash deploy/google-cloud/create-vm.sh
 ```
 
-The script enables Compute Engine, creates the data disk if needed, creates the VM, and
-passes `bootstrap-vm.sh` as the Compute Engine startup script.
+The script:
+
+- enables Compute Engine, IAM and Google Sheets APIs
+- creates a dedicated `terry-career-agent` service account
+- creates the persistent data disk if needed
+- creates the VM with only the Google Sheets OAuth scope required by the intake bridge
+- passes the private Sheet ID to the VM as instance metadata
+- installs JST, retention timers, and the twice-daily Sheet intake timer
+
+The script prints the service-account email. Share the private intake Sheet with that exact
+address as **Editor**. The VM does not need Gmail or Outlook credentials.
 
 ## Open JST
 
@@ -81,6 +90,27 @@ The repository's mutable directories are symlinked onto that disk:
 The disk is attached with auto-delete disabled, so deleting the VM does not delete the
 Career Agent data disk. Deleting the data disk itself is irreversible.
 
+## Email intake bridge
+
+The mailbox reader remains the twice-daily ChatGPT task. It writes only structured job
+lead fields plus a short snippet to a private Google Sheet.
+
+At 05:10 and 17:10 the VM runs:
+
+```bash
+npm run intake:sync
+```
+
+The sync:
+
+1. reads only rows whose status is `Pending Review`
+2. maps them into JST's existing pending-email review queue
+3. skips postings already known to JST
+4. writes `Queued in JST`, `Already known`, or `Error` back to the Sheet
+5. clears processed bridge rows after seven days
+
+Full mailbox content is not copied to the VM or the Sheet.
+
 ## Operations
 
 Service status:
@@ -89,10 +119,16 @@ Service status:
 sudo systemctl status job-search-terminal
 ```
 
-Retention timers:
+All Career Agent timers:
 
 ```bash
 sudo systemctl list-timers 'job-search-terminal-*'
+```
+
+Run intake sync manually:
+
+```bash
+sudo -u jst bash -lc 'cd /opt/job-search-terminal && npm run intake:sync'
 ```
 
 Run cleanup manually:
@@ -112,10 +148,3 @@ Startup-script logs:
 ```bash
 sudo journalctl -u google-startup-scripts.service -n 200 --no-pager
 ```
-
-## Email intake bridge
-
-The VM deliberately does not receive Gmail or Outlook credentials. The twice-daily ChatGPT
-mail scan remains the mailbox reader. A private Google-owned intake queue will bridge those
-structured results into the cloud JST after the VM/project identity exists, so the VM can
-be granted only the narrow queue access it needs.
