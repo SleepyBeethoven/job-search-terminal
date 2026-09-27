@@ -1,6 +1,6 @@
 {
   "name": "job-search-terminal",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "A free, source-available, local-first job-search dashboard that helps job seekers scan roles, score fit with AI, generate tailored resumes, track applications, and prepare for interviews, with optional lightweight cloud staging for connected inbox intake.",
   "license": "CC-BY-NC-4.0",
   "author": "UX Design Lab",
@@ -51,7 +51,8 @@
     "data:export": "tsx scripts/data-export.ts",
     "discover:sources": "tsx scripts/discover-sources.ts",
     "retention:cleanup": "tsx scripts/retention-cleanup.ts",
-    "career-agent:qa": "tsx scripts/career-agent-qa.ts"
+    "career-agent:qa": "tsx scripts/career-agent-qa.ts",
+    "security:check": "tsx scripts/security-agent.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
