@@ -18,6 +18,8 @@ console.log("- incremental mailbox intake only");
 console.log("- explicit first-run cutoff");
 console.log("- per-provider durable watermarks");
 console.log("- connector API requires the current provider watermark");
+console.log("- zero-cost Apps Script bridge is opt-in and syncs only to Pending Review");
+console.log("- cloud rows are acknowledged only after a successful local queue write");
 console.log("- failed scans do not advance watermarks");
 console.log("- no historical backfill by default");
 console.log("- zero-cost / no billing-backed infrastructure");

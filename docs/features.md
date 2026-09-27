@@ -607,7 +607,12 @@ status, posting maintenance, and bulk tools.
   boundary, and messages at or before the baseline are ignored before their body
   is parsed. The scheduled connector workflow keeps independent Gmail and Outlook
   `last_success_at` watermarks in the private Google Sheet intake queue; a failed
-  provider scan does not advance its watermark. Each candidate is pre-scored
+  provider scan does not advance its watermark. The optional zero-cost Google Apps
+  Script bridge pulls `Pending Review` Sheet rows into the existing local approval
+  queue on JST startup and every five minutes while JST is running. It uses an HTTPS
+  POST-body shared secret, acknowledges a row only after the local write succeeds,
+  and is idempotent across retries. Sheet rows older than seven days are cleaned up
+  by the Apps Script trigger. Each candidate is pre-scored
   against your saved target roles and positive title filters (**Matches criteria**
   / **Off target** / **No criteria set**). Candidates matching your criteria are
   pre-checked; off-target ones appear unchecked. Choose **Add to jobs** or

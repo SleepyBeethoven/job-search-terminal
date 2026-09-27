@@ -74,6 +74,12 @@ export function validateCareerAgentEmailIntakeContract(): string[] {
     errors.push("email intake must stop before score, tailoring, or application");
   }
   if (!contract.qa.mandatory) errors.push("mandatory QA gate cannot be disabled");
+  if (contract.bridge.transport !== "google-apps-script-web-app") errors.push("Career Agent bridge must use the approved Apps Script transport");
+  if (contract.bridge.auth !== "shared-secret-post-body") errors.push("Career Agent bridge secret must travel in the POST body");
+  if (contract.bridge.enabledByEnvironment !== true) errors.push("Career Agent bridge must be opt-in through environment configuration");
+  if (contract.bridge.autoSyncTarget !== "pending-review") errors.push("Career Agent bridge may sync only to Pending Review");
+  if (contract.bridge.ackOnlyAfterLocalQueueWrite !== true) errors.push("Career Agent bridge may acknowledge only after local queue write");
+  if (contract.bridge.zeroCostRequired !== true) errors.push("Career Agent bridge must remain zero-cost");
   if (contract.providers.length !== 2 || !contract.providers.includes("gmail") || !contract.providers.includes("outlook")) {
     errors.push("gmail and outlook must both have independent watermarks");
   }
