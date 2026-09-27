@@ -426,15 +426,16 @@ function extractCandidates(input: {
     }
 
     // Gmail/Glassdoor-style digests often render company first and job title second.
-    if (looksLikeCompany(line) && looksLikeTitle(next)) {
-      const location = LOCATION_RE.test(third) ? third : "";
+    // Keep this deliberately narrow so normal title -> company layouts are not double-counted.
+    if (!looksLikeTitle(line) && looksLikeCompany(line) && looksLikeTitle(next) && LOCATION_RE.test(third)) {
       pushCandidate({
         title: next,
         company: line,
-        location,
+        location: third,
         snippet: [line, next, third, input.lines[i + 3] ?? ""].filter(Boolean).join("\n"),
         link,
       });
+      i += 1;
     }
   }
 
