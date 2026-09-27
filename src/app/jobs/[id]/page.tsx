@@ -221,6 +221,23 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
     revalidatePath(`/jobs/${id}`);
   }
 
+  async function useTemplateAction(formData: FormData) {
+    "use server";
+    const resumeName = String(formData.get("resumeName") ?? "").trim();
+    if (resumeName) updateJobRecommendedResume(id, resumeName);
+    revalidatePath(`/jobs/${id}`);
+    redirect(`/jobs/${id}?tab=apply`);
+  }
+
+  async function skipJobAction() {
+    "use server";
+    updateApplicationStatus({ jobId: id, status: "Skipped" });
+    revalidatePath(`/jobs/${id}`);
+    revalidatePath("/applications");
+    revalidatePath("/dashboard");
+    redirect("/jobs");
+  }
+
   async function fetchDescriptionAction(): Promise<FetchDescriptionState> {
     "use server";
     const { fetchJobDescriptionOutcome } = await import("@/lib/scanner/jd-fetcher");
@@ -535,6 +552,8 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
             resumeVersions={resumeVersions}
             resumes={resumes}
             setResumeBaseAction={setResumeBaseAction}
+            useTemplateAction={useTemplateAction}
+            skipJobAction={skipJobAction}
           />
         )}
 
