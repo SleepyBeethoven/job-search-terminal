@@ -11,10 +11,11 @@ type PendingResponse = {
   candidates: PendingEmailJobCandidate[];
 };
 
-// "reviewing"  — normal candidate list
-// "importing"  — approve API call in flight; show spinner
-// "done"       — import finished; brief confirmation before navigating
-type Phase = "reviewing" | "importing" | "done";
+// "reviewing"   — normal candidate list
+// "importing"   — approved leads are being saved
+// "evaluating"  — newly imported jobs are being scored and routed to a resume lane
+// "done"        — scored jobs are ready for Terry's decision
+type Phase = "reviewing" | "importing" | "evaluating" | "done";
 
 const POLL_INTERVAL_MS = 8_000;
 
@@ -26,6 +27,7 @@ export function EmailCandidateApprovalModal() {
   const [phase, setPhase] = useState<Phase>("reviewing");
   const [importingCount, setImportingCount] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
+  const [evaluationProgress, setEvaluationProgress] = useState({ current: 0, total: 0, failed: 0 });
   const [dismissWorking, setDismissWorking] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
@@ -96,7 +98,7 @@ export function EmailCandidateApprovalModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "approve", ids }),
       });
-      const payload = (await res.json()) as { imported?: number };
+      const payload = (await res.json()) as { imported?: number; jobIds?: string[] };
       if (!res.ok) throw new Error("Request failed");
 
       const remaining = candidates.filter((c) => !ids.includes(c.id));
@@ -106,12 +108,35 @@ export function EmailCandidateApprovalModal() {
         ids.forEach((id) => next.delete(id));
         return next;
       });
-      setImportedCount(payload.imported ?? ids.length);
+      const imported = payload.imported ?? ids.length;
+      const jobIds = payload.jobIds ?? [];
+      setImportedCount(imported);
+
+      if (jobIds.length > 0) {
+        setPhase("evaluating");
+        setEvaluationProgress({ current: 0, total: jobIds.length, failed: 0 });
+
+        let failed = 0;
+        for (let index = 0; index < jobIds.length; index += 1) {
+          const jobId = jobIds[index];
+          setEvaluationProgress({ current: index + 1, total: jobIds.length, failed });
+          try {
+            const evaluationResponse = await fetch(`/api/evaluate/${encodeURIComponent(jobId)}`);
+            const streamText = await evaluationResponse.text();
+            const completed = evaluationResponse.ok && streamText.includes('"phase":"complete"');
+            if (!completed) failed += 1;
+          } catch {
+            failed += 1;
+          }
+          setEvaluationProgress({ current: index + 1, total: jobIds.length, failed });
+        }
+      }
+
       setPhase("done");
 
-      // Brief confirmation, then navigate to the jobs page.
-      await new Promise<void>((r) => setTimeout(r, 1200));
-      router.push("/jobs");
+      // The next human action is a decision, so land on the decision queue.
+      await new Promise<void>((r) => setTimeout(r, 900));
+      router.push("/dashboard");
       setOpen(false);
       setPhase("reviewing");
     } catch {
@@ -169,7 +194,7 @@ export function EmailCandidateApprovalModal() {
 
   const selectedIds = [...selected];
   const selectedCount = selectedIds.length;
-  const isImporting = phase === "importing" || phase === "done";
+  const isImporting = phase !== "reviewing";
 
   return (
     <Modal
@@ -218,7 +243,11 @@ export function EmailCandidateApprovalModal() {
       }
     >
       {isImporting ? (
-        <ImportingView phase={phase} count={phase === "done" ? importedCount : importingCount} />
+        <ImportingView
+          phase={phase}
+          count={phase === "done" ? importedCount : importingCount}
+          evaluationProgress={evaluationProgress}
+        />
       ) : (
         <div className="divide-y divide-border">
           {/* Select all / none row */}
@@ -267,34 +296,19 @@ export function EmailCandidateApprovalModal() {
   );
 }
 
-function ImportingView({ phase, count }: { phase: Phase; count: number }) {
+function ImportingView({
+  phase,
+  count,
+  evaluationProgress,
+}: {
+  phase: Phase;
+  count: number;
+  evaluationProgress: { current: number; total: number; failed: number };
+}) {
   const label = count === 1 ? "1 job" : `${count} jobs`;
   return (
     <div className="flex flex-col items-center justify-center gap-5 py-24 px-8 text-center">
-      {phase === "importing" ? (
-        <>
-          <svg
-            aria-hidden="true"
-            className="h-9 w-9 animate-spin text-accent"
-            fill="none"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-            <path
-              className="opacity-80"
-              d="M4 12a8 8 0 018-8"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeWidth="3"
-            />
-          </svg>
-          <div className="grid gap-1">
-            <p className="text-sm font-medium text-ink">Adding {label}…</p>
-            <p className="text-xs text-muted">Saving leads and fetching posting details</p>
-          </div>
-        </>
-      ) : (
+      {phase === "done" ? (
         <>
           <svg
             aria-hidden="true"
@@ -313,8 +327,43 @@ function ImportingView({ phase, count }: { phase: Phase; count: number }) {
             />
           </svg>
           <div className="grid gap-1">
-            <p className="text-sm font-medium text-ink">{label} added</p>
-            <p className="text-xs text-muted">Taking you to your job list…</p>
+            <p className="text-sm font-medium text-ink">{label} ready for review</p>
+            <p className="text-xs text-muted">
+              {evaluationProgress.failed > 0
+                ? `${evaluationProgress.failed} could not be auto-scored and can be evaluated manually.`
+                : "Scoring and resume-lane routing finished. Opening Waiting for Terry…"}
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <svg
+            aria-hidden="true"
+            className="h-9 w-9 animate-spin text-accent"
+            fill="none"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path
+              className="opacity-80"
+              d="M4 12a8 8 0 018-8"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="3"
+            />
+          </svg>
+          <div className="grid gap-1">
+            <p className="text-sm font-medium text-ink">
+              {phase === "evaluating"
+                ? `Scoring job ${evaluationProgress.current} of ${evaluationProgress.total}…`
+                : `Adding ${label}…`}
+            </p>
+            <p className="text-xs text-muted">
+              {phase === "evaluating"
+                ? "Matching against your profile and routing to R1–R5"
+                : "Saving leads and fetching posting details"}
+            </p>
           </div>
         </>
       )}
