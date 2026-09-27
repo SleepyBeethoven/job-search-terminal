@@ -1164,7 +1164,7 @@ export const helpPages: HelpPage[] = [
     readTime: "10 min",
     icon: "lock",
     highlights: [
-      "Your resumes, jobs, notes, and application history sit on your own computer. There is no account and no server holding them.",
+      "Your resumes, full job records, notes, and application history stay on your own computer. Connected mailbox intake may stage a few lightweight job fields and timestamps in your private Google Sheet.",
       "When you ask for something AI-powered, the relevant text goes to the service you chose. If that matters to you, use Ollama and nothing leaves at all.",
       "The app never applies for a job, never sends a message, and never fills in a form for you.",
     ],
@@ -1192,11 +1192,12 @@ export const helpPages: HelpPage[] = [
           "If your first service runs out of credits, the app moves on to the next one in your list. A bar at the top of the page tells you when that is happening, so you are never surprised about which service received your text.",
           "If a document is genuinely sensitive, do not run a cloud AI feature on it. Use Ollama for that one, or handle it yourself.",
           "If you think anyone else has seen your key, delete it on the service\'s website and make a new one.",
+          "If you use Terry OS connected mailbox intake, Gmail and Outlook job alerts can place lightweight fields — company, title, location, posting link, a short snippet, and scan timestamps — in your private Google Sheet queue. Full email bodies, full job descriptions, resumes, and application material are not stored there.",
           "Once a day the app asks GitHub whether a newer version of Job Search Terminal exists. It sends one code identifying a version that is already published on GitHub — nothing about you, your jobs, or your resumes, and nothing you have written yourself.",
         ],
         callout: {
           title: "Fully private with Ollama",
-          body: "Put Ollama at the top of your list in Settings → AI Provider, leave Resume writing uses on Same as provider priority, and keep Ollama running. Every AI request — job descriptions, resume content, application answers — is then handled on your own computer. For nothing to leave even when Ollama stops, switch off the other services in the list: the app only falls back to services that are switched on.",
+          body: "Put Ollama at the top of your list in Settings → AI Provider, leave Resume writing uses on Same as provider priority, and keep Ollama running. AI requests are then handled on your own computer. If Terry OS connected mailbox intake is enabled, its lightweight Google Sheet queue is still a separate cloud staging path; turn that automation off as well if you want no Career Agent data to leave the computer.",
         },
       },
       {
