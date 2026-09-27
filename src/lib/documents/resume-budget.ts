@@ -41,7 +41,7 @@ function sectionUnitCount(section: ResumeBuilderSection): number {
   if (section.type === "experience") {
     return Math.max(0, section.experience?.filter((entry) => entry.bullets.length > 0).length ?? 0);
   }
-  if (section.type === "summary") return section.text?.trim() ? 1 : 1;
+  if (section.type === "summary") return 1;
   if (section.type === "skills") return (section.items?.length ?? 0) > 0 ? 1 : 0;
   if (section.type === "impact" || section.type === "recognition" || section.type === "custom") {
     return (section.items?.length ?? 0) > 0 || Boolean(section.text?.trim()) ? 1 : 0;
@@ -83,11 +83,11 @@ export function estimateResumeBudget(input: ResumeBudgetInput): ResumeBudgetEsti
   const highTokens = roundUp(Math.max(lowTokens, high));
   const budgetTokens = Math.max(1_000, input.budgetTokens);
   const status: ResumeBudgetStatus =
-    highTokens <= budgetTokens
-      ? "within_budget"
-      : highTokens <= budgetTokens * 1.25
+    highTokens > budgetTokens
+      ? "over_budget"
+      : highTokens > budgetTokens * 0.8
         ? "near_budget"
-        : "over_budget";
+        : "within_budget";
 
   return {
     lowTokens,
@@ -104,5 +104,5 @@ export function resumeBudgetForMode(mode: "light" | "full"): number {
   const key = mode === "light" ? "RESUME_LIGHT_BUDGET_TOKENS" : "RESUME_FULL_BUDGET_TOKENS";
   const configured = Number(process.env[key] ?? "");
   if (Number.isFinite(configured) && configured >= 1_000) return Math.round(configured);
-  return mode === "light" ? 18_000 : 50_000;
+  return mode === "light" ? 25_000 : 60_000;
 }
