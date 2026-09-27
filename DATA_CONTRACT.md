@@ -1,5 +1,14 @@
 # Data Contract
 
+> **Terry OS Career Agent note:** the core JST database and resume/application data
+> remain local-first. The optional scheduled mailbox intake may use a connected private
+> Google Sheet as a lightweight queue and per-provider watermark store. That queue may
+> contain only structured job lead fields and short snippets; it must not store full
+> email bodies, full job descriptions, resumes, application answers, or generated
+> documents. Historical mailbox backfill is disabled by default and the intake path is
+> governed by the Mandatory QA Gate in `AGENTS.md`.
+
+
 This document defines the **authoritative boundary** between the User Layer and
 the System Layer for all agents working in this repository (Claude, Codex, or
 any other automated tool).
