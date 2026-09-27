@@ -57,7 +57,7 @@ describe("resume token preflight", () => {
     expect(estimate(fullModes).highTokens).toBeGreaterThan(estimate(lightModes).highTokens);
   });
 
-  it("blocks when the conservative upper estimate exceeds the ceiling by more than 25%", () => {
+  it("blocks whenever the conservative upper estimate exceeds the ceiling", () => {
     expect(estimate(fullModes, 1_000).status).toBe("over_budget");
   });
 
