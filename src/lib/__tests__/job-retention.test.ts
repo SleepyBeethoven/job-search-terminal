@@ -37,8 +37,15 @@ function addJob(id: string, status: string, ageDays: number) {
   }]);
   const db = client.getDatabase();
   db.prepare(
-    "update jobs set status = ?, raw_description = 'large jd', parsed_description = 'large jd', updated_at = datetime(?, ?) where id = ?"
-  ).run(status, NOW.toISOString(), `-${ageDays} days`, id);
+    "update jobs set status = ?, raw_description = 'large jd', parsed_description = 'large jd', created_at = datetime(?, ?), updated_at = datetime(?, ?) where id = ?"
+  ).run(
+    status,
+    NOW.toISOString(),
+    `-${ageDays} days`,
+    NOW.toISOString(),
+    `-${ageDays} days`,
+    id
+  );
   // Imports record activity too. Keep the fixture's complete activity clock in
   // sync with the backdated job so retention is testing policy age rather than
   // being kept alive by today's synthetic import event.
