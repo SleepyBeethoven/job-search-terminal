@@ -92,6 +92,7 @@ export type JobRecord = {
   cleanupArchiveReason?: string;
   retentionPinned: boolean;
   retentionCompactedAt: string;
+  retentionLastActivityAt: string;
   retentionReason: string;
   livenessStatus: string;
   livenessCheckedAt: string;
