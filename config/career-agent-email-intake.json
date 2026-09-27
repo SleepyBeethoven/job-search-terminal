@@ -14,9 +14,9 @@
   "watermarkScope": "per-provider",
   "watermarkStore": {
     "type": "google-sheet",
-    "spreadsheetId": "1MBjx5Oq6lTUnELZydgnyiedHklpH2uM_Xcf_2nrcgvg",
     "stateTab": "State",
-    "intakeTab": "Intake"
+    "intakeTab": "Intake",
+    "spreadsheetIdSource": "private-runtime-state"
   },
   "rules": {
     "historicalBackfillByDefault": false,
