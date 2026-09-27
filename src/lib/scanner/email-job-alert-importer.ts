@@ -424,6 +424,18 @@ function extractCandidates(input: {
         link,
       });
     }
+
+    // Gmail/Glassdoor-style digests often render company first and job title second.
+    if (looksLikeCompany(line) && looksLikeTitle(next)) {
+      const location = LOCATION_RE.test(third) ? third : "";
+      pushCandidate({
+        title: next,
+        company: line,
+        location,
+        snippet: [line, next, third, input.lines[i + 3] ?? ""].filter(Boolean).join("\n"),
+        link,
+      });
+    }
   }
 
   return candidates;
