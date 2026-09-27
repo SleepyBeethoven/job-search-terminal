@@ -2,8 +2,10 @@
 
 Job Search Terminal is a local-first, dashboard-first job-search command center.
 It discovers jobs from ATS APIs, scores them against a career profile using AI,
-generates tailored resumes, drafts application answers, and tracks applications —
-all running locally on the user's machine with no cloud storage.
+generates tailored resumes, drafts application answers, and tracks applications.
+The core database, resumes, application history, and generated documents stay local.
+Terry OS may use a private Google Sheet only as a lightweight mailbox intake queue
+and watermark store; it must not become the primary job database.
 
 ## Project Direction
 
@@ -136,7 +138,7 @@ Rules for the entry itself:
 ## Architecture
 
 - **Framework:** Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Runtime:** local Node.js process — all data stays on the user's machine
+- **Runtime:** local Node.js process for JST; Terry OS may use the private Google Sheet staging queue defined in the Career Agent intake contract
 - **Data store:** SQLite via `better-sqlite3` at `data/job-search-terminal.sqlite`
 - **PDF generation:** Playwright-based HTML-to-PDF (requires Chrome)
 - **AI:** provider-mediated calls via `src/lib/ai/` — supports OpenAI, Anthropic, Google Gemini
