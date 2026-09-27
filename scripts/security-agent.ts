@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { scanSecurityEntries, securityVerdict, type SecurityScanEntry } from "../src/lib/security/security-agent";
+import { scanSecurityEntries, securityVerdict, validateSecurityPolicy, type SecurityScanEntry } from "../src/lib/security/security-agent";
 
 const paths = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" })
   .split("\0")
@@ -21,20 +21,24 @@ const entries: SecurityScanEntry[] = paths.map((filePath) => {
   }
 });
 
-const findings = scanSecurityEntries(entries);
+const policy = JSON.parse(readFileSync("config/security-agent.json", "utf8")) as unknown;
+const findings = [...scanSecurityEntries(entries), ...validateSecurityPolicy(policy)];
 const verdict = securityVerdict(findings);
 
 if (findings.length === 0) {
-  console.log("PASS — Security Agent v0.1");
+  console.log("PASS — Security Agent v0.2");
   console.log("- no tracked runtime user data");
   console.log("- no obvious personal mailbox addresses");
   console.log("- no private Google Sheet identifier in public code");
   console.log("- no common hard-coded credential pattern detected");
-  console.log("- GitHub public-repo secret scanning remains a second layer");
+  console.log("- Internet Safety Baseline v2 is enabled
+- mailbox intake is metadata-first and excludes junk/deleted folders
+- external content cannot override agent instructions
+- GitHub public-repo secret scanning remains a second layer");
   process.exit(0);
 }
 
-console.error(`${verdict} — Security Agent v0.1`);
+console.error(`${verdict} — Security Agent v0.2`);
 for (const finding of findings) {
   console.error(`- [${finding.rule}] ${finding.path}: ${finding.detail}`);
 }
