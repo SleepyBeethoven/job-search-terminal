@@ -15,6 +15,23 @@ the numbers mean and when they change.
 
 ---
 
+## 0.20.0 — 2026-09-27 — Private Google Sheet intake bridge
+
+**Added**
+
+- Career Agent can consume the private `Terry OS — Career Agent Intake Queue` Google Sheet without storing Gmail or Outlook credentials on the VM.
+- The queue sync maps structured `Pending Review` rows into JST's existing pending-email review flow, preserves the human approval gate, and avoids re-queuing postings already present in JST.
+- Processed bridge rows are cleared after 7 days so the Sheet remains a short-lived transport queue rather than a second job database.
+- Google Cloud provisioning creates a dedicated service account with only the Google Sheets OAuth scope required by the bridge.
+- The VM runs `npm run intake:sync` at 05:10 and 17:10 Asia/Shanghai, shortly after the 05:00 and 17:00 mailbox scans.
+
+**Changed**
+
+- The twice-daily mailbox scan writes only structured lead fields and a short snippet to the private Sheet; full email bodies and full job descriptions are not stored in the bridge.
+- The VM does not receive Gmail or Outlook credentials and JST remains bound to localhost behind an SSH tunnel.
+
+---
+
 ## 0.19.0 — 2026-09-27 — Cloud retention and low-storage operation
 
 **Added**
